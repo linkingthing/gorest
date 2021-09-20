@@ -1,7 +1,7 @@
 package resourcedoc
 
 import (
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 	"testing"
 
 	ut "github.com/zdnscloud/cement/unittest"

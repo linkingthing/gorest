@@ -6,8 +6,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/linkingthing/gorest/resource"
 	ut "github.com/zdnscloud/cement/unittest"
-	"github.com/zdnscloud/gorest/resource"
 )
 
 func TestGenerateResourceRoute(t *testing.T) {
@@ -220,7 +220,7 @@ func TestAddResourceCollectionLink(t *testing.T) {
 	for _, tc := range cases {
 		req, _ := http.NewRequest(http.MethodGet, tc.url, nil)
 		r, _ := mgr.CreateResourceFromRequest(req)
-		coll, err := resource.NewResourceCollection(r, tc.children)
+		coll, err := resource.NewResourceCollection(nil, r)
 		ut.Assert(t, err == nil, "get err %v", err)
 		err = r.GetSchema().(*Schema).AddLinksToResourceCollection(coll, "http://127.0.0.1:5555")
 		ut.Assert(t, err == nil, "")

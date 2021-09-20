@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zdnscloud/gorest"
-	"github.com/zdnscloud/gorest/adaptor"
-	goresterr "github.com/zdnscloud/gorest/error"
-	"github.com/zdnscloud/gorest/resource"
-	"github.com/zdnscloud/gorest/resource/schema"
+	"github.com/linkingthing/gorest"
+	"github.com/linkingthing/gorest/adaptor"
+	goresterr "github.com/linkingthing/gorest/error"
+	"github.com/linkingthing/gorest/resource"
+	"github.com/linkingthing/gorest/resource/schema"
 )
 
 var (

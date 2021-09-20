@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -8,8 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/linkingthing/gorest/resource"
 	"github.com/zdnscloud/cement/reflector"
-	"github.com/zdnscloud/gorest/resource"
 )
 
 type RStore struct {
@@ -253,4 +254,50 @@ func (tx RStoreTx) Commit() error {
 
 func (tx RStoreTx) Rollback() error {
 	return tx.Tx.Rollback(context.TODO())
+}
+
+func (tx RStoreTx) BatchInsert(rs ...resource.Resource) (int64, error) {
+	if len(rs) == 0 {
+		return 0, nil
+	}
+	descriptor, tableName, err := tx.getDescriptor(rs[0])
+	if err != nil {
+		return 0, fmt.Errorf("get descriptor failed %s", err.Error())
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("insert into ")
+	buf.WriteString(tableName)
+	buf.WriteString(" values ")
+	fieldCount := len(descriptor.Fields) + len(descriptor.Owners) + len(descriptor.Refers)
+	args := make([]interface{}, 0, fieldCount)
+	offset := 1
+	for i, r := range rs {
+		r.SetCreationTimestamp(time.Now())
+		if sql, argOne, err := genBatchInsertSql(descriptor, r, fieldCount, offset); err != nil {
+			return 0, err
+		} else {
+			buf.WriteString(sql)
+			if i < len(rs)-1 {
+				buf.WriteString(",")
+			}
+			args = append(args, argOne...)
+		}
+		offset += fieldCount
+	}
+
+	if result, err := tx.Tx.Exec(context.TODO(), buf.String(), args...); err != nil {
+		return 0, err
+	} else {
+		return result.RowsAffected(), err
+	}
+}
+
+func (tx RStoreTx) getDescriptor(r resource.Resource) (*ResourceDescriptor, string, error) {
+	typ := ResourceDBType(r)
+	descriptor, err := tx.meta.GetDescriptor(typ)
+	if err != nil {
+		return nil, "", fmt.Errorf("get %v descriptor failed %v", typ, err.Error())
+	}
+	return descriptor, resourceTableName(typ), nil
 }

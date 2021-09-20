@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/util"
 )
 
 type ResourceLinkType string

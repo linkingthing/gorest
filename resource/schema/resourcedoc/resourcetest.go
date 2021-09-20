@@ -2,7 +2,7 @@ package resourcedoc
 
 import (
 	"encoding/json"
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 )
 
 func (s TestStruct) GetParents() []resource.ResourceKind {

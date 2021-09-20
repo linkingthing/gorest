@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 )
 
 type ResourceAction struct {

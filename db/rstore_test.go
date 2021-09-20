@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/linkingthing/gorest/resource"
 	ut "github.com/zdnscloud/cement/unittest"
-	"github.com/zdnscloud/gorest/resource"
 )
 
 const ConnStr string = "user=lx password=lx host=localhost port=5432 database=lx sslmode=disable pool_max_conns=10"
@@ -505,4 +505,35 @@ func TestIntLimit(t *testing.T) {
 
 	store.Clean()
 	store.Close()
+}
+
+func initMothers(n int) []resource.Resource {
+	ms := make([]resource.Resource, n)
+	for i := 0; i < n; i++ {
+		id := strconv.Itoa(i)
+		m := &Mother{
+			Name: "lxq" + id,
+		}
+		m.SetID(id)
+		ms[i] = m
+	}
+	return ms
+}
+
+func TestBatchInsert(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
+	ut.Assert(t, err == nil, "")
+	store, err := NewRStore(ConnStr, meta)
+	ut.Assert(t, err == nil, "")
+
+	tx, _ := store.Begin()
+	exp := 10000
+	ms := initMothers(exp)
+	num, err := tx.BatchInsert(ms...)
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	ut.Equal(t, num, int64(exp))
+	tx.Commit()
 }

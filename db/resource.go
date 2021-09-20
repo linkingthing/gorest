@@ -3,9 +3,9 @@ package db
 import (
 	"fmt"
 
+	"github.com/linkingthing/gorest/resource"
 	"github.com/zdnscloud/cement/reflector"
 	"github.com/zdnscloud/cement/stringtool"
-	"github.com/zdnscloud/gorest/resource"
 )
 
 const (
