@@ -260,19 +260,11 @@ func (tx RStoreTx) BatchInsert(value interface{}) (int64, error) {
 	reflectValue := reflect.Indirect(reflect.ValueOf(value))
 	switch reflectValue.Kind() {
 	case reflect.Array, reflect.Slice:
-		if reflectValue.Len() == 0 {
+		reflectLen := reflectValue.Len()
+		if reflectLen == 0 {
 			return 0, nil
 		}
-		r, err := reflector.GetStructPointerInSlice(value)
-		if err != nil {
-			return 0, err
-		}
-		descriptor, tableName, err := tx.getDescriptor(r.(resource.Resource))
-		if err != nil {
-			return 0, err
-		}
-
-		return tx.execBatchInsert(descriptor, tableName, reflectValue)
+		return tx.prepareBatchInsert(reflectValue, reflectLen, value, maxBatchSize)
 	default:
 		r, err := reflector.GetStructPointerInSlice(value)
 		if err != nil {
@@ -285,12 +277,40 @@ func (tx RStoreTx) BatchInsert(value interface{}) (int64, error) {
 	}
 }
 
-func (tx RStoreTx) execBatchInsert(descriptor *ResourceDescriptor, tableName string, value reflect.Value) (int64, error) {
+func (tx RStoreTx) prepareBatchInsert(reflectValue reflect.Value, reflectLen int, value interface{}, batchSize int) (int64, error) {
+	r, err := reflector.GetStructPointerInSlice(value)
+	if err != nil {
+		return 0, err
+	}
+	descriptor, tableName, err := tx.getDescriptor(r.(resource.Resource))
+	if err != nil {
+		return 0, err
+	}
+	var effectRows int64
+	fieldCount := len(descriptor.Fields) + len(descriptor.Owners) + len(descriptor.Refers)
+	if fieldCount*reflectLen > batchSize {
+		batchSize = batchSize / fieldCount
+	}
+	for i := 0; i < reflectLen; i += batchSize {
+		ends := i + batchSize
+		if ends > reflectLen {
+			ends = reflectLen
+		}
+		c, err := tx.execBatchInsert(descriptor, tableName, fieldCount, reflectValue.Slice(i, ends))
+		if err != nil {
+			return 0, err
+		} else {
+			effectRows += c
+		}
+	}
+	return effectRows, nil
+}
+
+func (tx RStoreTx) execBatchInsert(descriptor *ResourceDescriptor, tableName string, fieldCount int, value reflect.Value) (int64, error) {
 	var buf bytes.Buffer
 	buf.WriteString("insert into ")
 	buf.WriteString(tableName)
 	buf.WriteString(" values ")
-	fieldCount := len(descriptor.Fields) + len(descriptor.Owners) + len(descriptor.Refers)
 	args := make([]interface{}, 0, fieldCount)
 	offset := 1
 	valueLen := value.Len()

@@ -527,7 +527,7 @@ func TestBatch(t *testing.T) {
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
-	exp := 10000
+	exp := 100000
 	ms := initMothers(exp)
 	num, err := tx.BatchInsert(ms)
 	if err != nil {
