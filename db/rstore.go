@@ -256,15 +256,36 @@ func (tx RStoreTx) Rollback() error {
 	return tx.Tx.Rollback(context.TODO())
 }
 
-func (tx RStoreTx) BatchInsert(rs ...resource.Resource) (int64, error) {
-	if len(rs) == 0 {
-		return 0, nil
-	}
-	descriptor, tableName, err := tx.getDescriptor(rs[0])
-	if err != nil {
-		return 0, fmt.Errorf("get descriptor failed %s", err.Error())
-	}
+func (tx RStoreTx) BatchInsert(value interface{}) (int64, error) {
+	reflectValue := reflect.Indirect(reflect.ValueOf(value))
+	switch reflectValue.Kind() {
+	case reflect.Array, reflect.Slice:
+		if reflectValue.Len() == 0 {
+			return 0, nil
+		}
+		r, err := reflector.GetStructPointerInSlice(value)
+		if err != nil {
+			return 0, err
+		}
+		descriptor, tableName, err := tx.getDescriptor(r.(resource.Resource))
+		if err != nil {
+			return 0, err
+		}
 
+		return tx.execBatchInsert(descriptor, tableName, reflectValue)
+	default:
+		r, err := reflector.GetStructPointerInSlice(value)
+		if err != nil {
+			return 0, err
+		}
+		if _, err := tx.Insert(r.(resource.Resource)); err != nil {
+			return 0, err
+		}
+		return 1, nil
+	}
+}
+
+func (tx RStoreTx) execBatchInsert(descriptor *ResourceDescriptor, tableName string, value reflect.Value) (int64, error) {
 	var buf bytes.Buffer
 	buf.WriteString("insert into ")
 	buf.WriteString(tableName)
@@ -272,13 +293,13 @@ func (tx RStoreTx) BatchInsert(rs ...resource.Resource) (int64, error) {
 	fieldCount := len(descriptor.Fields) + len(descriptor.Owners) + len(descriptor.Refers)
 	args := make([]interface{}, 0, fieldCount)
 	offset := 1
-	for i, r := range rs {
-		r.SetCreationTimestamp(time.Now())
-		if sql, argOne, err := genBatchInsertSql(descriptor, r, fieldCount, offset); err != nil {
+	valueLen := value.Len()
+	for i := 0; i < valueLen; i++ {
+		if sql, argOne, err := genBatchInsertSql(descriptor, value.Index(i).Interface(), fieldCount, offset); err != nil {
 			return 0, err
 		} else {
 			buf.WriteString(sql)
-			if i < len(rs)-1 {
+			if i < valueLen-1 {
 				buf.WriteString(",")
 			}
 			args = append(args, argOne...)

@@ -507,20 +507,20 @@ func TestIntLimit(t *testing.T) {
 	store.Close()
 }
 
-func initMothers(n int) []resource.Resource {
-	ms := make([]resource.Resource, n)
+func initMothers(n int) []*Mother {
+	ms := make([]*Mother, n)
 	for i := 0; i < n; i++ {
 		id := strconv.Itoa(i)
 		m := &Mother{
 			Name: "lxq" + id,
 		}
-		m.SetID(id)
+		m.SetID("id:" + id)
 		ms[i] = m
 	}
 	return ms
 }
 
-func TestBatchInsert(t *testing.T) {
+func TestBatch(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewRStore(ConnStr, meta)
@@ -529,7 +529,7 @@ func TestBatchInsert(t *testing.T) {
 	tx, _ := store.Begin()
 	exp := 10000
 	ms := initMothers(exp)
-	num, err := tx.BatchInsert(ms...)
+	num, err := tx.BatchInsert(ms)
 	if err != nil {
 		t.Errorf(err.Error())
 		return

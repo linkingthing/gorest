@@ -18,7 +18,7 @@ type ResourceStore interface {
 
 type Transaction interface {
 	Insert(r resource.Resource) (resource.Resource, error)
-	BatchInsert(rs ...resource.Resource) (int64, error)
+	BatchInsert(value interface{}) (int64, error)
 	// Get return an slice of Resource which is a pointer to struct
 	Get(typ ResourceType, cond map[string]interface{}) (interface{}, error)
 	// GetOwned this is used for many to many relationship

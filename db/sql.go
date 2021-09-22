@@ -419,7 +419,7 @@ func rowsToResources(rows pgx.Rows, out interface{}) error {
 	return nil
 }
 
-func genBatchInsertSql(descriptor *ResourceDescriptor, r resource.Resource, fieldCount, offset int) (string, []interface{}, error) {
+func genBatchInsertSql(descriptor *ResourceDescriptor, value interface{}, fieldCount, offset int) (string, []interface{}, error) {
 	markers := make([]string, 0, fieldCount)
 	for i := offset; i < fieldCount+offset; i++ {
 		markers = append(markers, "$"+strconv.Itoa(i))
@@ -427,22 +427,22 @@ func genBatchInsertSql(descriptor *ResourceDescriptor, r resource.Resource, fiel
 	sql := strings.Join([]string{"(", strings.Join(markers, ","), ")"}, " ")
 	args := make([]interface{}, 0, fieldCount)
 
-	id := r.GetID()
-	if id == "" {
-		id, _ = uuid.Gen()
-		r.SetID(id)
-	}
-
-	val, isOk := reflector.GetStructFromPointer(r)
+	val, isOk := reflector.GetStructFromPointer(value)
 	if isOk == false {
-		return "", nil, fmt.Errorf("%v is not pointer to resource", reflect.TypeOf(r).Kind().String())
+		return "", nil, fmt.Errorf("%v is not pointer to resource", reflect.TypeOf(value).Kind().String())
 	}
 
 	for _, field := range descriptor.Fields {
 		if field.Name == IDField {
-			args = append(args, id)
+			fieldVal := val.FieldByName(EmbedResource).Interface().(resource.ResourceBase)
+			if fieldVal.ID == "" {
+				id, _ := uuid.Gen()
+				args = append(args, id)
+			} else {
+				args = append(args, fieldVal.GetID())
+			}
 		} else if field.Name == CreateTimeField {
-			args = append(args, r.GetCreationTimestamp())
+			args = append(args, resource.ISOTime(time.Now()))
 		} else {
 			fieldVal := val.FieldByName(stringtool.ToUpperCamel(field.Name))
 			args = append(args, fieldVal.Interface())
