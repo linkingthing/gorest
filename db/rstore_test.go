@@ -520,20 +520,22 @@ func initMothers(n int) []*Mother {
 	return ms
 }
 
-func TestBatch(t *testing.T) {
+func TestBatchInsert(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewRStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
-	tx, _ := store.Begin()
 	exp := 100000
 	ms := initMothers(exp)
+	begin := time.Now()
+	tx, _ := store.Begin()
 	num, err := tx.BatchInsert(ms)
 	if err != nil {
 		t.Errorf(err.Error())
 		return
 	}
-	ut.Equal(t, num, int64(exp))
 	tx.Commit()
+	ut.Equal(t, num, int64(exp))
+	t.Log("batch insert spend", time.Now().Sub(begin))
 }

@@ -11,7 +11,8 @@ import (
 const (
 	IDField         = "id"
 	CreateTimeField = "create_time"
-	maxBatchSize    = 65535
+	batchSize       = 65535
+	maxBatchSize    = 1000000
 )
 
 type ResourceType string

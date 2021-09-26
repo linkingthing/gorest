@@ -263,17 +263,13 @@ func (tx RStoreTx) BatchInsert(value interface{}) (int64, error) {
 		reflectLen := reflectValue.Len()
 		if reflectLen == 0 {
 			return 0, nil
+		} else if reflectLen > maxBatchSize {
+			return 0, fmt.Errorf("the limit size of batch insert is %d", maxBatchSize)
 		}
-		return tx.prepareBatchInsert(reflectValue, reflectLen, value, maxBatchSize)
+
+		return tx.prepareBatchInsert(reflectValue, reflectLen, value, batchSize)
 	default:
-		r, err := reflector.GetStructPointerInSlice(value)
-		if err != nil {
-			return 0, err
-		}
-		if _, err := tx.Insert(r.(resource.Resource)); err != nil {
-			return 0, err
-		}
-		return 1, nil
+		return 0, fmt.Errorf("only support pointer of slice")
 	}
 }
 
@@ -296,8 +292,7 @@ func (tx RStoreTx) prepareBatchInsert(reflectValue reflect.Value, reflectLen int
 		if ends > reflectLen {
 			ends = reflectLen
 		}
-		c, err := tx.execBatchInsert(descriptor, tableName, fieldCount, reflectValue.Slice(i, ends))
-		if err != nil {
+		if c, err := tx.execBatchInsert(descriptor, tableName, fieldCount, reflectValue.Slice(i, ends)); err != nil {
 			return 0, err
 		} else {
 			effectRows += c
