@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/util"
 )
 
 type Validator interface {

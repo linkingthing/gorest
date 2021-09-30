@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	ut "github.com/zdnscloud/cement/unittest"
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 )
 
 func TestGenerateResourceRoute(t *testing.T) {

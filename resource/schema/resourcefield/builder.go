@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zdnscloud/gorest/resource/schema/resourcefield/validator"
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/resource/schema/resourcefield/validator"
+	"github.com/linkingthing/gorest/util"
 )
 
 type FieldBuilder struct {

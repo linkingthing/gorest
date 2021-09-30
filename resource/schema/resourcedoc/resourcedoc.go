@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	slice "github.com/zdnscloud/cement/slice"
-	"github.com/zdnscloud/gorest/resource"
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/resource"
+	"github.com/linkingthing/gorest/util"
 )
 
 const (

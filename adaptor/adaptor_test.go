@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	ut "github.com/zdnscloud/cement/unittest"
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 )
 
 type testStruct struct {

@@ -7,10 +7,10 @@ import (
 	"path"
 	"reflect"
 
-	goresterr "github.com/zdnscloud/gorest/error"
-	"github.com/zdnscloud/gorest/resource"
-	"github.com/zdnscloud/gorest/resource/schema/resourcedoc"
-	"github.com/zdnscloud/gorest/resource/schema/resourcefield"
+	goresterr "github.com/linkingthing/gorest/error"
+	"github.com/linkingthing/gorest/resource"
+	"github.com/linkingthing/gorest/resource/schema/resourcedoc"
+	"github.com/linkingthing/gorest/resource/schema/resourcefield"
 )
 
 type Schema struct {

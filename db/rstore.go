@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/linkingthing/gorest/resource"
 	"github.com/zdnscloud/cement/reflector"
-	"github.com/zdnscloud/gorest/resource"
 )
 
 type RStore struct {

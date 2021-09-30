@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/util"
 )
 
 const (

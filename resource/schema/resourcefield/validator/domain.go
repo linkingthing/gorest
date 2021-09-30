@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/util"
 )
 
 const domainPrefix = "isDomain="

@@ -7,8 +7,8 @@ import (
 	"path"
 	"reflect"
 
-	goresterr "github.com/zdnscloud/gorest/error"
-	"github.com/zdnscloud/gorest/resource"
+	goresterr "github.com/linkingthing/gorest/error"
+	"github.com/linkingthing/gorest/resource"
 )
 
 func restHandler(ctx *resource.Context) *goresterr.APIError {

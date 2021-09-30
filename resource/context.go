@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zdnscloud/gorest/error"
+	"github.com/linkingthing/gorest/error"
 )
 
 const (

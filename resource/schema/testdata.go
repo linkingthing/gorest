@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/zdnscloud/gorest/resource"
+	"github.com/linkingthing/gorest/resource"
 )
 
 var version = resource.APIVersion{

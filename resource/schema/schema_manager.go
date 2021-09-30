@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	goresterr "github.com/zdnscloud/gorest/error"
-	"github.com/zdnscloud/gorest/resource"
+	goresterr "github.com/linkingthing/gorest/error"
+	"github.com/linkingthing/gorest/resource"
 )
 
 type SchemaManager struct {

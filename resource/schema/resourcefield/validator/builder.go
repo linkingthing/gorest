@@ -3,7 +3,7 @@ package validator
 import (
 	"reflect"
 
-	"github.com/zdnscloud/gorest/util"
+	"github.com/linkingthing/gorest/util"
 )
 
 var builders []ValidatorBuilder = []ValidatorBuilder{

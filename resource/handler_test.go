@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ut "github.com/zdnscloud/cement/unittest"
-	err "github.com/zdnscloud/gorest/error"
+	err "github.com/linkingthing/gorest/error"
 )
 
 type dumbHandlerTwo struct{}

@@ -1,7 +1,7 @@
 package resource
 
 import (
-	goresterr "github.com/zdnscloud/gorest/error"
+	goresterr "github.com/linkingthing/gorest/error"
 	"net/http"
 )
 
