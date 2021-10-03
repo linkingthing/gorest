@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	CreateMethod string = "CreateRootPlan"
+	CreateMethod string = "Create"
 	DeleteMethod string = "Delete"
 	UpdateMethod string = "Update"
 	ListMethod   string = "List"
-	GetMethod    string = "GetPlanWithLayout"
+	GetMethod    string = "Get"
 	ActionMethod string = "Action"
 )
 
