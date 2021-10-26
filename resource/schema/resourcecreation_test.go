@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/linkingthing/cement/unittest"
 )
 
 type podGenJson struct {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zdnscloud/cement/slice"
+	"github.com/linkingthing/cement/slice"
 	"github.com/linkingthing/gorest/util"
 )
 

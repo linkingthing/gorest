@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/zdnscloud/cement/uuid"
+	"github.com/linkingthing/cement/uuid"
 	"github.com/linkingthing/gorest/error"
 )
 

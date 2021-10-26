@@ -8,7 +8,7 @@ import (
 	goresterr "github.com/linkingthing/gorest/error"
 	"github.com/linkingthing/gorest/resource"
 	"github.com/linkingthing/gorest/resource/schema"
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/linkingthing/cement/unittest"
 )
 
 var (

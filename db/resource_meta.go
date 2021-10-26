@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zdnscloud/cement/stringtool"
+	"github.com/linkingthing/cement/stringtool"
 
 	"github.com/linkingthing/gorest/resource"
 )

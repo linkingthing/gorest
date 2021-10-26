@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/linkingthing/cement/unittest"
 	"github.com/linkingthing/gorest/resource"
 )
 

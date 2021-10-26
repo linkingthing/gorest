@@ -3,7 +3,7 @@ package resource
 import (
 	"testing"
 
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/linkingthing/cement/unittest"
 )
 
 type Deployment struct {

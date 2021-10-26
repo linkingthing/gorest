@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/linkingthing/cement/unittest"
 )
 
 func TestCollectionToJson(t *testing.T) {

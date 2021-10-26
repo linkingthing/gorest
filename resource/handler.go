@@ -13,7 +13,7 @@ const (
 	DeleteMethod string = "Delete"
 	UpdateMethod string = "Update"
 	ListMethod   string = "List"
-	GetMethod    string = "Get"
+	GetMethod    string = "GetOrganization"
 	ActionMethod string = "Action"
 )
 
