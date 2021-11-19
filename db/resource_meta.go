@@ -39,14 +39,14 @@ var postgresqlTypeMap = map[Datatype]string{
 	Float32:       "float4",
 	String:        "text",
 	Time:          "timestamp with time zone",
-	IP:            "cidr",
+	IP:            "inet",
 	IPNet:         "inet",
 	SmallIntArray: "integer[]",
 	BigIntArray:   "bigint[]",
 	SuperIntArray: "numeric[]",
 	Float32Array:  "float4[]",
 	StringArray:   "text[]",
-	IPSlice:       "cidr[]",
+	IPSlice:       "inet[]",
 	IPNetSlice:    "inet[]",
 }
 
