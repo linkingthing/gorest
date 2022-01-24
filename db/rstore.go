@@ -28,11 +28,15 @@ func NewRStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
 		return nil, err
 	}
 
-	for _, descriptor := range meta.GetDescriptors() {
-		_, err := pool.Exec(context.TODO(), createTableSql(descriptor))
-		if err != nil {
-			pool.Close()
-			return nil, err
+	if recovery, err := DBIsRecoveryMode(pool); err != nil {
+		return nil, err
+	} else if recovery == false {
+		for _, descriptor := range meta.GetDescriptors() {
+			_, err := pool.Exec(context.TODO(), createTableSql(descriptor))
+			if err != nil {
+				pool.Close()
+				return nil, err
+			}
 		}
 	}
 
