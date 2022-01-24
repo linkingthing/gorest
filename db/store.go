@@ -39,6 +39,8 @@ type Transaction interface {
 	FillEx(out interface{}, sql string, params ...interface{}) error
 	Exec(sql string, params ...interface{}) (int64, error)
 
+	CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error)
+
 	Commit() error
 	Rollback() error
 }

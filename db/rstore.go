@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/linkingthing/gorest/resource"
 	"github.com/linkingthing/cement/reflector"
+	"github.com/linkingthing/gorest/resource"
 )
 
 type RStore struct {
@@ -245,6 +245,20 @@ func (tx RStoreTx) Exec(sql string, params ...interface{}) (int64, error) {
 	} else {
 		return result.RowsAffected(), nil
 	}
+}
+
+func (tx RStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error) {
+	descriptor, err := tx.meta.GetDescriptor(typ)
+	if err != nil {
+		return 0, fmt.Errorf("get descriptor for %v failed %v", typ, err.Error())
+	}
+	if len(values) == 0 {
+		return 0, nil
+	}
+
+	c, err := tx.Tx.CopyFrom(context.Background(), pgx.Identifier{resourceTableName(descriptor.Typ)}, columns,
+		pgx.CopyFromRows(values))
+	return c, err
 }
 
 func (tx RStoreTx) Commit() error {
