@@ -42,6 +42,12 @@ func createTableSql(descriptor *ResourceDescriptor) string {
 		buf.WriteString(field.Name)
 		buf.WriteString(" ")
 		buf.WriteString(postgresqlTypeMap[field.Type])
+
+		if field.NotNull {
+			buf.WriteString(" ")
+			buf.WriteString("not null")
+		}
+
 		if field.Unique {
 			buf.WriteString(" ")
 			buf.WriteString("unique")
@@ -93,8 +99,7 @@ func createTableSql(descriptor *ResourceDescriptor) string {
 		buf.WriteString("),")
 	}
 
-	sql := (strings.TrimRight(buf.String(), ",") + ")")
-	return sql
+	return strings.TrimRight(buf.String(), ",") + ")"
 }
 
 func insertSqlArgsAndID(meta *ResourceMeta, r resource.Resource) (string, []interface{}, error) {
@@ -190,7 +195,7 @@ func deleteSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	}
 
 	if len(conds) == 0 {
-		return ("delete from " + resourceTableName(descriptor.Typ)), nil, nil
+		return "delete from " + resourceTableName(descriptor.Typ), nil, nil
 	}
 
 	whereState := make([]string, 0, len(conds))
@@ -213,7 +218,7 @@ func existsSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	}
 
 	if len(conds) == 0 {
-		return ("select (exists (select 1 from " + resourceTableName(descriptor.Typ) + " limit 1))"), nil, nil
+		return "select (exists (select 1 from " + resourceTableName(descriptor.Typ) + " limit 1))", nil, nil
 	}
 
 	whereState := make([]string, 0, len(conds))
@@ -241,7 +246,7 @@ func countSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]inte
 	if err != nil {
 		return "", nil, err
 	} else if whereState == "" {
-		return ("select count(*) from " + resourceTableName(descriptor.Typ)), nil, nil
+		return "select count(*) from " + resourceTableName(descriptor.Typ), nil, nil
 	} else {
 		return strings.Join([]string{"select count(*) from", resourceTableName(descriptor.Typ), "where", whereState}, " "), args, nil
 	}

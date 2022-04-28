@@ -61,10 +61,11 @@ const (
 )
 
 type ResourceField struct {
-	Name   string
-	Type   Datatype
-	Unique bool
-	Check  Check
+	Name    string
+	Type    Datatype
+	Unique  bool
+	Check   Check
+	NotNull bool
 }
 
 type ResourceDescriptor struct {
@@ -209,9 +210,9 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		ResourceField{Name: CreateTimeField, Type: Time},
 	}
 	pks := []ResourceType{IDField}
-	uks := []ResourceType{}
-	owners := []ResourceType{}
-	refers := []ResourceType{}
+	var uks []ResourceType
+	var owners []ResourceType
+	var refers []ResourceType
 
 	goTyp := reflect.TypeOf(r)
 	if goTyp.Kind() != reflect.Ptr || goTyp.Elem().Kind() != reflect.Struct {
@@ -238,18 +239,23 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		} else if tagContains(fieldTag, "referto") {
 			refers = append(refers, ResourceType(fieldName))
 		} else {
-			newfield, err := parseField(fieldName, field.Type)
+			newField, err := parseField(fieldName, field.Type)
 			if err == nil {
 				if tagContains(fieldTag, "suk") {
-					newfield.Unique = true
+					newField.Unique = true
 				} else {
-					newfield.Unique = false
+					newField.Unique = false
 				}
 
 				if tagContains(fieldTag, "positive") {
-					newfield.Check = Positive
+					newField.Check = Positive
 				}
-				fields = append(fields, *newfield)
+
+				if tagContains(fieldTag, "not null") {
+					newField.NotNull = true
+				}
+
+				fields = append(fields, *newField)
 			} else {
 				fmt.Printf("!!!! warning, field %s parse failed %s\n", fieldName, err.Error())
 			}

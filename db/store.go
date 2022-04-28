@@ -8,29 +8,26 @@ import (
 )
 
 type ResourceStore interface {
-	//clear all the data
 	Clean()
-	//close the conn to db
 	Close()
-
 	Begin() (Transaction, error)
 }
 
 type Transaction interface {
 	Insert(r resource.Resource) (resource.Resource, error)
-	//return an slice of Resource which is a pointer to struct
+	// Get return an slice of Resource which is a pointer to struct
 	Get(typ ResourceType, cond map[string]interface{}) (interface{}, error)
-	//this is used for many to many relationship
-	//which means there is a seperate table which owner and owned resource in it
+	// GetOwned this is used for many to many relationship
+	//which means there is a separate table which owner and owned resource in it
 	//return an slice of Resource which is a pointer to struct
 	GetOwned(owner ResourceType, ownerID string, owned ResourceType) (interface{}, error)
 	Exists(typ ResourceType, cond map[string]interface{}) (bool, error)
 	Count(typ ResourceType, cond map[string]interface{}) (int64, error)
-	//out should be an slice of Resource which is a pointer to struct
+	// Fill out should be an slice of Resource which is a pointer to struct
 	Fill(cond map[string]interface{}, out interface{}) error
 	Delete(typ ResourceType, cond map[string]interface{}) (int64, error)
 	Update(typ ResourceType, nv map[string]interface{}, cond map[string]interface{}) (int64, error)
-	//Samilar with GetOwned
+	// FillOwned Similar with GetOwned
 	//out should be an slice of Resource which is a pointer to struct
 	FillOwned(owner ResourceType, ownerID string, out interface{}) error
 
@@ -38,7 +35,7 @@ type Transaction interface {
 	CountEx(typ ResourceType, sql string, params ...interface{}) (int64, error)
 	FillEx(out interface{}, sql string, params ...interface{}) error
 	Exec(sql string, params ...interface{}) (int64, error)
-
+	// CopyFromEx the order of columns should the same with values
 	CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error)
 
 	Commit() error
@@ -58,7 +55,7 @@ func WithTx(store ResourceStore, f func(Transaction) error) error {
 	return err
 }
 
-//out should be a slice of struct pointer
+// GetResourceWithID out should be a slice of struct pointer
 func GetResourceWithID(store ResourceStore, id string, out interface{}) (interface{}, error) {
 	err := WithTx(store, func(tx Transaction) error {
 		return tx.Fill(map[string]interface{}{IDField: id}, out)

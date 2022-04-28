@@ -506,3 +506,18 @@ func TestIntLimit(t *testing.T) {
 	store.Clean()
 	store.Close()
 }
+
+type People struct {
+	resource.ResourceBase
+	Name      string `db:"uk,not null"`
+	Age       uint32
+	Classroom string `db:"-"`
+}
+
+func TestNotNullTag(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&People{}})
+	ut.Assert(t, err == nil, "")
+	for _, descriptor := range meta.GetDescriptors() {
+		t.Log(createTableSql(descriptor))
+	}
+}
