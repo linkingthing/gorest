@@ -29,8 +29,14 @@ func NewRStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
 	}
 
 	if recovery, err := DBIsRecoveryMode(pool); err != nil {
+		pool.Close()
 		return nil, err
 	} else if recovery == false {
+		if err := InitSchema(pool); err != nil {
+			pool.Close()
+			return nil, err
+		}
+
 		for _, descriptor := range meta.GetDescriptors() {
 			_, err := pool.Exec(context.TODO(), createTableSql(descriptor))
 			if err != nil {

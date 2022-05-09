@@ -16,7 +16,7 @@ import (
 	"github.com/linkingthing/gorest/resource"
 )
 
-const TablePrefix = "gr_"
+const TablePrefix = "lx.gr_"
 
 const (
 	joinSqlTemplateContent string = "select {{.OwnedTable}}.* from {{.OwnedTable}} inner join {{.RelTable}} on ({{.OwnedTable}}.id={{.RelTable}}.{{.Owned}} and {{.RelTable}}.{{.Owner}}=$1)"
