@@ -7,8 +7,9 @@ import (
 )
 
 const (
+	SchemaName          = "lx"
 	dropPublicSchemaSql = "drop schema if exists public cascade"
-	createLxSchemaSql   = "create schema if not exists lx"
+	createLxSchemaSql   = "create schema if not exists " + SchemaName
 )
 
 func InitSchema(pool *pgxpool.Pool) error {

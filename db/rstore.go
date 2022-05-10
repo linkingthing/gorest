@@ -266,7 +266,9 @@ func (tx RStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]int
 		return 0, nil
 	}
 
-	c, err := tx.Tx.CopyFrom(context.Background(), pgx.Identifier{resourceTableName(descriptor.Typ)}, columns,
+	c, err := tx.Tx.CopyFrom(context.Background(),
+		pgx.Identifier{SchemaName, resourceTableNameWithoutSchema(descriptor.Typ)},
+		columns,
 		pgx.CopyFromRows(values))
 	return c, err
 }
