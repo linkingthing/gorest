@@ -3,14 +3,13 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"path"
-	"reflect"
-
 	goresterr "github.com/linkingthing/gorest/error"
 	"github.com/linkingthing/gorest/resource"
 	"github.com/linkingthing/gorest/resource/schema/resourcedoc"
 	"github.com/linkingthing/gorest/resource/schema/resourcefield"
+	"net/http"
+	"path"
+	"reflect"
 )
 
 type Schema struct {
@@ -86,8 +85,13 @@ func (s *Schema) CreateResourceFromPathSegments(parent resource.Resource, segmen
 
 	r.SetType(resource.DefaultKindName(s.resourceKind))
 	if segmentCount > 1 {
-		r.SetID(segments[1])
+		if err := ValidateString(segments[1]); err != nil {
+			return nil, goresterr.NewAPIError(goresterr.InvalidFormat, "invalid id")
+		} else {
+			r.SetID(segments[1])
+		}
 	}
+
 	if segmentCount <= 2 {
 		if err := s.validateAndFillResource(r, method, action, body); err != nil {
 			return nil, err
