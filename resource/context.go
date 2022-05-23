@@ -1,13 +1,13 @@
 package resource
 
 import (
-	"github.com/linkingthing/gorest/util"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/linkingthing/gorest/error"
+	"github.com/linkingthing/gorest/util"
 )
 
 const (
@@ -101,8 +101,8 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 	var pagination Pagination
 	var err *error.APIError
 	for k, v := range valueMap {
-		if err = validateQueryValue(v); err != nil {
-			return nil, nil, err
+		if !validateQueryValue(v) {
+			return nil, nil, error.NewAPIError(error.InvalidFormat, "invalid query key "+k)
 		}
 
 		filter := Filter{
@@ -135,14 +135,14 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 	return filters, &pagination, nil
 }
 
-func validateQueryValue(values []string) *error.APIError {
+func validateQueryValue(values []string) bool {
 	for _, v := range values {
 		if err := util.ValidateString(v); err != nil {
-			return error.NewAPIError(error.InvalidFormat, "invalid query value "+v)
+			return false
 		}
 	}
 
-	return nil
+	return true
 }
 
 func filtersValuesToInt(values []string) (int, *error.APIError) {
