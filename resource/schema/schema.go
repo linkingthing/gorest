@@ -7,6 +7,7 @@ import (
 	"github.com/linkingthing/gorest/resource"
 	"github.com/linkingthing/gorest/resource/schema/resourcedoc"
 	"github.com/linkingthing/gorest/resource/schema/resourcefield"
+	"github.com/linkingthing/gorest/util"
 	"net/http"
 	"path"
 	"reflect"
@@ -85,7 +86,7 @@ func (s *Schema) CreateResourceFromPathSegments(parent resource.Resource, segmen
 
 	r.SetType(resource.DefaultKindName(s.resourceKind))
 	if segmentCount > 1 {
-		if err := ValidateString(segments[1]); err != nil {
+		if err := util.ValidateString(segments[1]); err != nil {
 			return nil, goresterr.NewAPIError(goresterr.InvalidFormat, "invalid id")
 		} else {
 			r.SetID(segments[1])

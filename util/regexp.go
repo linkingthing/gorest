@@ -1,4 +1,4 @@
-package schema
+package util
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type NameRegexp struct {
 
 var NameRegs = []*NameRegexp{
 	{
-		Regexp:       regexp.MustCompile(`^[0-9a-zA-Z-_/,\p{Han}@*]+$`),
+		Regexp:       regexp.MustCompile(`^[0-9a-zA-Z-_/:.,\p{Han}@*]+$`),
 		ErrMsg:       "is not legal",
 		ExpectResult: true,
 	},
@@ -30,13 +30,11 @@ var NameRegs = []*NameRegexp{
 }
 
 func ValidateString(s string) error {
-	if s == "" {
-		return nil
-	}
-
-	for _, reg := range NameRegs {
-		if ret := reg.Regexp.MatchString(s); ret != reg.ExpectResult {
-			return fmt.Errorf("%s %s", s, reg.ErrMsg)
+	if s != "" {
+		for _, reg := range NameRegs {
+			if ret := reg.Regexp.MatchString(s); ret != reg.ExpectResult {
+				return fmt.Errorf("%s %s", s, reg.ErrMsg)
+			}
 		}
 	}
 

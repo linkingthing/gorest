@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"github.com/linkingthing/gorest/util"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -90,11 +91,20 @@ func (ctx *Context) SetPagination(pagination *Pagination) {
 	ctx.pagination = pagination
 }
 
-func genFiltersAndPagination(url *url.URL) ([]Filter, *Pagination, *error.APIError) {
+func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
+	valueMap, err_ := url.ParseQuery(requestUrl.RawQuery)
+	if err_ != nil {
+		return nil, nil, error.NewAPIError(error.InvalidFormat, err_.Error())
+	}
+
 	filters := make([]Filter, 0)
 	var pagination Pagination
 	var err *error.APIError
-	for k, v := range url.Query() {
+	for k, v := range valueMap {
+		if err = validateQueryValue(v); err != nil {
+			return nil, nil, err
+		}
+
 		filter := Filter{
 			Name:     k,
 			Modifier: Eq,
@@ -123,6 +133,16 @@ func genFiltersAndPagination(url *url.URL) ([]Filter, *Pagination, *error.APIErr
 	}
 
 	return filters, &pagination, nil
+}
+
+func validateQueryValue(values []string) *error.APIError {
+	for _, v := range values {
+		if err := util.ValidateString(v); err != nil {
+			return error.NewAPIError(error.InvalidFormat, "invalid query value "+v)
+		}
+	}
+
+	return nil
 }
 
 func filtersValuesToInt(values []string) (int, *error.APIError) {

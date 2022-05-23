@@ -2,6 +2,7 @@ package resource
 
 import (
 	"encoding/json"
+	"net/url"
 	"testing"
 
 	ut "github.com/linkingthing/cement/unittest"
@@ -49,4 +50,30 @@ func TestPagination(t *testing.T) {
 	ut.Assert(t, pagination.PageNum == 1, "")
 	ut.Assert(t, pagination.Total == 55, "")
 	ut.Assert(t, pagination.PageSize == 55, "")
+}
+
+func TestGenFiltersAndPagination(t *testing.T) {
+	rawUrls := []string{
+		"https://10.0.0.66/apis/linkingthing.com/organization/v1/organizations?action=create_subnode",
+		"https://10.0.0.66/apis/linkingthing.com/organization/v1/organizations?page_size=10&page_num=1",
+		"https://10.0.0.66/apis/linkingthing.com/organization/v1/organizations?vendor=abc",
+		"https://10.0.0.66/apis/linkingthing.com/organization/v1/organizations?page_size=10&ttt=xy_z&prefix=2009::/64&prefix1=2001::&prefix2=10.0.0.0/24",
+	}
+
+	for _, rawUrl := range rawUrls {
+		reqUrl, err := url.Parse(rawUrl)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		filters, pagination, restErr := genFiltersAndPagination(reqUrl)
+		if restErr != nil {
+			t.Error(restErr)
+			continue
+		}
+
+		t.Log(filters, pagination)
+	}
+
 }

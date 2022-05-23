@@ -1,6 +1,8 @@
-package schema
+package util
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestValidateString(t *testing.T) {
 	data := []string{
@@ -19,6 +21,15 @@ func TestValidateString(t *testing.T) {
 		"xx,xx",
 		"x-x",
 		"x_x",
+		"enable",
+		"true",
+		"2001::/64",
+		"2001::1330",
+		"2001::",
+		"abc/24f",
+		"10.0.0.0/24",
+		"10.0.0.1",
+		"www.baidu.com",
 	}
 
 	for _, tt := range data {
