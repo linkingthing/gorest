@@ -18,12 +18,12 @@ var NameRegs = []*NameRegexp{
 		ExpectResult: true,
 	},
 	{
-		Regexp:       regexp.MustCompile(`(^-)|(^\.)|(^/)|(^,)|(^，)|(^、)`),
+		Regexp:       regexp.MustCompile(`(^-)|(^/)|(^,)|(^，)|(^、)`),
 		ErrMsg:       "is not legal",
 		ExpectResult: false,
 	},
 	{
-		Regexp:       regexp.MustCompile(`-$|_$|/$|，$|、$|,$|\.$`),
+		Regexp:       regexp.MustCompile(`-$|_$|/$|，$|、$|,$`),
 		ErrMsg:       "is not legal",
 		ExpectResult: false,
 	},

@@ -30,6 +30,7 @@ func TestValidateString(t *testing.T) {
 		"10.0.0.0/24",
 		"10.0.0.1",
 		"www.baidu.com",
+		".",
 	}
 
 	for _, tt := range data {
