@@ -91,6 +91,10 @@ func (ctx *Context) SetPagination(pagination *Pagination) {
 	ctx.pagination = pagination
 }
 
+func (ctx *Context) IsAcceptLanguageZH() bool {
+	return strings.HasPrefix(ctx.Request.Header.Get("accept-language"), "zh")
+}
+
 func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
 	valueMap, err_ := url.ParseQuery(requestUrl.RawQuery)
 	if err_ != nil {

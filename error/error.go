@@ -33,20 +33,34 @@ type ErrorCode struct {
 	Status int    `json:"status,omitempty"`
 }
 
+type ErrorMessage struct {
+	MessageEN string `json:"-"`
+	MessageCN string `json:"-"`
+}
+
 type APIError struct {
 	ErrorCode `json:",inline"`
 	Type      string `json:"type,omitempty"`
 	Message   string `json:"message,omitempty"`
+	MessageCN string `json:"-"`
 }
 
-func NewAPIError(code ErrorCode, message string) *APIError {
+func NewAPIError(code ErrorCode, message ErrorMessage) *APIError {
 	return &APIError{
 		ErrorCode: code,
 		Type:      "error",
-		Message:   message,
+		Message:   message.MessageEN,
+		MessageCN: message.MessageCN,
 	}
 }
 
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+func (e *APIError) Localization(localize bool) *APIError {
+	if localize {
+		e.Message = e.MessageCN
+	}
+	return e
 }

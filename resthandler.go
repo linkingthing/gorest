@@ -39,7 +39,7 @@ func handleCreate(ctx *resource.Context) *goresterr.APIError {
 
 	r, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	ctx.Resource.SetID(r.GetID())
@@ -58,7 +58,7 @@ func handleDelete(ctx *resource.Context) *goresterr.APIError {
 	}
 
 	if err := handler(ctx); err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	kind, ok := ctx.Resource.(resource.ResourceKind)
@@ -81,7 +81,7 @@ func handleUpdate(ctx *resource.Context) *goresterr.APIError {
 
 	r, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	httpSchemeAndHost := path.Join(ctx.Request.URL.Scheme, ctx.Request.URL.Host)
@@ -103,7 +103,7 @@ func handleList(ctx *resource.Context) *goresterr.APIError {
 
 		data, err_ := handler(ctx)
 		if err_ != nil {
-			return err_
+			return err_.Localization(ctx.IsAcceptLanguageZH())
 		}
 		rc, err := resource.NewResourceCollection(ctx, data)
 		if err != nil {
@@ -122,7 +122,7 @@ func handleList(ctx *resource.Context) *goresterr.APIError {
 		}
 		r, err := handler(ctx)
 		if err != nil {
-			return err
+			return err.Localization(ctx.IsAcceptLanguageZH())
 		}
 
 		if r == nil || (reflect.ValueOf(r).Kind() == reflect.Ptr && reflect.ValueOf(r).IsNil()) {
@@ -152,7 +152,7 @@ func handleAction(ctx *resource.Context) *goresterr.APIError {
 
 	result, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	return WriteResponse(ctx.Response, http.StatusOK, result)
