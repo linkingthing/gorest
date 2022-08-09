@@ -88,7 +88,8 @@ func (s *Schema) CreateResourceFromPathSegments(parent resource.Resource, segmen
 	r.SetType(resource.DefaultKindName(s.resourceKind))
 	if segmentCount > 1 {
 		if err := util.ValidateString(segments[1]); err != nil {
-			return nil, goresterr.NewAPIError(goresterr.InvalidFormat, fmt.Sprintf("invalid resource %s id", r.GetType()))
+			return nil, goresterr.NewAPIError(goresterr.InvalidFormat,
+				goresterr.ErrorMessage{MessageEN: fmt.Sprintf("invalid resource %s id", r.GetType())})
 		} else {
 			r.SetID(segments[1])
 		}
@@ -114,7 +115,7 @@ func (s *Schema) CreateResourceFromPathSegments(parent resource.Resource, segmen
 		}
 	}
 	return nil, goresterr.NewAPIError(goresterr.NotFound,
-		fmt.Sprintf("%s is not a child of %s", segments[2], s.resourceName))
+		goresterr.ErrorMessage{MessageEN: fmt.Sprintf("%s is not a child of %s", segments[2], s.resourceName)})
 }
 
 func (s *Schema) validateAndFillResource(r resource.Resource, method, action string, body []byte) *goresterr.APIError {
@@ -132,11 +133,12 @@ func (s *Schema) validateAndFillResource(r resource.Resource, method, action str
 			objMap := make(map[string]interface{})
 			if body != nil {
 				if err := json.Unmarshal(body, &objMap); err != nil {
-					return goresterr.NewAPIError(goresterr.InvalidBodyContent, fmt.Sprintf("request body isn't a string map:%s", err.Error()))
+					return goresterr.NewAPIError(goresterr.InvalidBodyContent,
+						goresterr.ErrorMessage{MessageEN: fmt.Sprintf("request body isn't a string map:%s", err.Error())})
 				}
 			}
 			if err := s.fields.Validate(r, objMap); err != nil {
-				return goresterr.NewAPIError(goresterr.InvalidBodyContent, err.Error())
+				return goresterr.NewAPIError(goresterr.InvalidBodyContent, goresterr.ErrorMessage{MessageEN: err.Error()})
 			}
 		}
 	}
@@ -146,23 +148,26 @@ func (s *Schema) validateAndFillResource(r resource.Resource, method, action str
 func (s *Schema) parseAction(name string, body []byte) (*resource.Action, *goresterr.APIError) {
 	if s.handler.GetActionHandler() == nil {
 		return nil, goresterr.NewAPIError(goresterr.NotFound,
-			fmt.Sprintf("no handler for action %s", name))
+			goresterr.ErrorMessage{MessageEN: fmt.Sprintf("no handler for action %s", name)})
+
 	}
+
 	actions := s.resourceKind.GetActions()
 	for i, action := range actions {
 		if action.Name == name {
 			if action.Input != nil {
 				if err := json.Unmarshal(body, action.Input); err != nil {
 					return nil, goresterr.NewAPIError(goresterr.InvalidBodyContent,
-						fmt.Sprintf("failed to parse action params: %s", err.Error()))
+						goresterr.ErrorMessage{MessageEN: fmt.Sprintf("failed to parse action params: %s", err.Error())})
 				}
 			}
 			a := actions[i]
 			return &a, nil
 		}
 	}
+
 	return nil, goresterr.NewAPIError(goresterr.NotFound,
-		fmt.Sprintf("unknown action %s", name))
+		goresterr.ErrorMessage{MessageEN: fmt.Sprintf("unknown action %s", name)})
 }
 
 func (s *Schema) AddChild(child *Schema) error {

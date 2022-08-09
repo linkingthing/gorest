@@ -98,7 +98,7 @@ func (ctx *Context) IsAcceptLanguageZH() bool {
 func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
 	valueMap, err_ := url.ParseQuery(requestUrl.RawQuery)
 	if err_ != nil {
-		return nil, nil, error.NewAPIError(error.InvalidFormat, err_.Error())
+		return nil, nil, error.NewAPIError(error.InvalidFormat, error.ErrorMessage{MessageEN: err_.Error()})
 	}
 
 	filters := make([]Filter, 0)
@@ -106,7 +106,7 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 	var err *error.APIError
 	for k, v := range valueMap {
 		if !validateQueryValue(v) {
-			return nil, nil, error.NewAPIError(error.InvalidFormat, "invalid query key "+k)
+			return nil, nil, error.NewAPIError(error.InvalidFormat, error.ErrorMessage{MessageEN: "invalid query key " + k})
 		}
 
 		filter := Filter{
@@ -153,9 +153,9 @@ func filtersValuesToInt(values []string) (int, *error.APIError) {
 	var i int
 	for _, value := range values {
 		if valueInt, err := strconv.Atoi(value); err != nil {
-			return 0, error.NewAPIError(error.InvalidFormat, err.Error())
+			return 0, error.NewAPIError(error.InvalidFormat, error.ErrorMessage{MessageEN: err.Error()})
 		} else if i = valueInt; i < 0 {
-			return 0, error.NewAPIError(error.InvalidFormat, "negative number")
+			return 0, error.NewAPIError(error.InvalidFormat, error.ErrorMessage{MessageEN: "negative number"})
 		} else {
 			break
 		}

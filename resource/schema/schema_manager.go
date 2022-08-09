@@ -61,7 +61,7 @@ func (m *SchemaManager) CreateResourceFromRequest(req *http.Request) (resource.R
 		body, err = ioutil.ReadAll(req.Body)
 		if err != nil {
 			return nil, goresterr.NewAPIError(goresterr.InvalidBodyContent,
-				fmt.Sprintf("failed to read request body: %s", err.Error()))
+				goresterr.ErrorMessage{MessageEN: fmt.Sprintf("failed to read request body: %s", err.Error())})
 		}
 		defer req.Body.Close()
 	}
@@ -73,7 +73,8 @@ func (m *SchemaManager) CreateResourceFromRequest(req *http.Request) (resource.R
 			return r, err
 		}
 	}
-	return nil, goresterr.NewAPIError(goresterr.NotFound, fmt.Sprintf("%s has unknown api version", req.URL.Path))
+	return nil, goresterr.NewAPIError(goresterr.NotFound,
+		goresterr.ErrorMessage{MessageEN: fmt.Sprintf("%s has unknown api version", req.URL.Path)})
 }
 
 func (m *SchemaManager) GetSchema(v *resource.APIVersion, kind resource.ResourceKind) resource.Schema {
