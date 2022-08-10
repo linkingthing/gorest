@@ -34,8 +34,8 @@ type ErrorCode struct {
 }
 
 type ErrorMessage struct {
-	MessageEN string `json:"-"`
-	MessageCN string `json:"-"`
+	MessageEN string `json:"messageEN"`
+	MessageCN string `json:"messageCN"`
 }
 
 type APIError struct {
@@ -63,4 +63,16 @@ func (e *APIError) Localization(localize bool) *APIError {
 		e.Message = e.MessageCN
 	}
 	return e
+}
+
+func NewErrorMessage(msgEn, msgCn string) *ErrorMessage {
+	return &ErrorMessage{MessageEN: msgEn, MessageCN: msgCn}
+}
+
+func (m *ErrorMessage) Error() string {
+	return m.MessageEN
+}
+
+func (m *ErrorMessage) ErrorCN() string {
+	return m.MessageCN
 }
