@@ -37,6 +37,16 @@ func TestValidateString(t *testing.T) {
 		"[]",
 		"[",
 		"]",
+		"a b",
+		"a	b",
+		"比(好)",
+		"努（尔）哈赤",
+		"()",
+		"（）",
+		"Windows8/8.1/10",
+		"Solaris 8 (SunOS 5.8)",
+		"Anaconda (RedHat) Installer\n",
+		"Eye-Fi Wireless Memory Card",
 	}
 
 	for _, tt := range data {

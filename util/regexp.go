@@ -13,7 +13,7 @@ type NameRegexp struct {
 
 var NameRegs = []*NameRegexp{
 	{
-		Regexp:       regexp.MustCompile(`^[0-9a-zA-Z-_/:.,\[\]\p{Han}@*]+$`),
+		Regexp:       regexp.MustCompile(`^[0-9a-zA-Z-_/:.,\[\]()（）\s\p{Han}@*]+$`),
 		ErrMsg:       "is not legal",
 		ExpectResult: true,
 	},
