@@ -521,3 +521,26 @@ func TestNotNullTag(t *testing.T) {
 		t.Log(createTableSql(descriptor))
 	}
 }
+
+type Animal struct {
+	Name string `json:"name" db:"uk"`
+	Age  int    `json:"age"`
+}
+
+type Cat struct {
+	resource.ResourceBase
+	*Animal `json:"animal" db:"embed"`
+	Address string `json:"address" db:"uk"`
+}
+
+func TestEmbedResource(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&Cat{}})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, descriptor := range meta.GetDescriptors() {
+		t.Log(createTableSql(descriptor))
+	}
+}
