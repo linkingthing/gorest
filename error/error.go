@@ -28,6 +28,11 @@ var (
 	ClusterUnavailable = ErrorCode{"ClusterUnavailable", 503}
 )
 
+const(
+	ErrorCHNameInvalidQuery = "查询参数[%s]不合法"
+	ErrorCHNameInvalidFormat = "请求格式不合法 "
+)
+
 type ErrorCode struct {
 	Code   string `json:"code,omitempty"`
 	Status int    `json:"status,omitempty"`
