@@ -30,7 +30,23 @@ func TestValidateString(t *testing.T) {
 		"10.0.0.0/24",
 		"10.0.0.1",
 		"www.baidu.com",
+		"www.baidu.com.",
 		".",
+		"[2001::5]:53",
+		"[2002::5]",
+		"[]",
+		"[",
+		"]",
+		"a b",
+		"a	b",
+		"比(好)",
+		"努（尔）哈赤",
+		"()",
+		"（）",
+		"Windows8/8.1/10",
+		"Solaris 8 (SunOS 5.8)",
+		"Anaconda (RedHat) Installer\n",
+		"Eye-Fi Wireless Memory Card",
 	}
 
 	for _, tt := range data {

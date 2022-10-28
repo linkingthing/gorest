@@ -144,10 +144,12 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 }
 
 func validateQueryValue(values []string) bool {
-	for _, v := range values {
+	for i, v := range values {
+		v = strings.TrimSpace(v)
 		if err := util.ValidateString(v); err != nil {
 			return false
 		}
+		values[i] = v
 	}
 
 	return true
