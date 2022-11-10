@@ -51,7 +51,7 @@ type Modifier string
 func NewContext(resp http.ResponseWriter, req *http.Request, schemas SchemaManager) (*Context, *error.APIError) {
 	filters, pagination, err := genFiltersAndPagination(req.URL)
 	if err != nil {
-		return nil, err
+		return nil, err.Localization(IsRequestAcceptLanguageZH(req))
 	}
 
 	r, err := schemas.CreateResourceFromRequest(req)
@@ -94,6 +94,10 @@ func (ctx *Context) SetPagination(pagination *Pagination) {
 
 func (ctx *Context) IsAcceptLanguageZH() bool {
 	return strings.HasPrefix(ctx.Request.Header.Get("accept-language"), "zh")
+}
+
+func IsRequestAcceptLanguageZH(request *http.Request) bool {
+	return strings.HasPrefix(request.Header.Get("accept-language"), "zh")
 }
 
 func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
