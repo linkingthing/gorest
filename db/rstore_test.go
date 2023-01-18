@@ -527,9 +527,15 @@ type Animal struct {
 	Age  int    `json:"age"`
 }
 
+type Run struct {
+	Speed    int `json:"speed"`
+	Rotation int `json:"rotation"`
+}
+
 type Cat struct {
 	resource.ResourceBase
-	*Animal `json:"animal" db:"embed"`
+	*Animal `db:"embed"`
+	Run     `db:"embed"`
 	Address string `json:"address" db:"uk"`
 }
 

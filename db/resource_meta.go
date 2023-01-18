@@ -239,12 +239,14 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		if tagContains(fieldTag, "embed") {
 			fieldValue := reflect.New(field.Type)
 			rt := reflect.ValueOf(fieldValue.Interface())
-			if rt.Kind() != reflect.Ptr && rt.Kind() != reflect.Struct {
-				return nil, fmt.Errorf("need structure pointer but get %s", rt.String())
-			}
 
 			embedType := reflect.Indirect(rt).Type()
-			embedType = embedType.Elem()
+			if embedType.Kind() != reflect.Ptr && embedType.Kind() != reflect.Struct {
+				return nil, fmt.Errorf("embed only support [structure or pointer] but get %s", embedType.String())
+			}
+			if embedType.Kind() == reflect.Ptr {
+				embedType = embedType.Elem()
+			}
 			for j := 0; j < embedType.NumField(); j++ {
 				embedField := embedType.Field(j)
 				embedFieldTag := embedField.Tag.Get(DBTag)
@@ -271,7 +273,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 						fmt.Println(err.Error())
 					} else {
 						if _, ok := fieldSet[newField.Name]; ok {
-							return nil, fmt.Errorf("!!! field %s is duplicate\n", field.Name)
+							return nil, fmt.Errorf("!!! field %s is duplicate\n", newField.Name)
 						}
 						fields = append(fields, *newField)
 						fieldSet[newField.Name] = struct{}{}
