@@ -219,6 +219,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		return nil, fmt.Errorf("need structure pointer but get %s", goTyp.String())
 	}
 	goTyp = goTyp.Elem()
+	fieldSet := make(map[string]struct{})
 	for i := 0; i < goTyp.NumField(); i++ {
 		field := goTyp.Field(i)
 		if field.Name == EmbedResource {
@@ -227,37 +228,82 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 
 		fieldName := stringtool.ToSnake(field.Name)
 		if fieldName == IDField || fieldName == CreateTimeField {
-			return nil, fmt.Errorf("has duplicate id or createTime field which already exists in resource base")
+			return nil, fmt.Errorf("id or createTime field has exists in resource base")
 		}
 
 		fieldTag := field.Tag.Get(DBTag)
 		if tagContains(fieldTag, "-") {
 			continue
 		}
+
+		if tagContains(fieldTag, "embed") {
+			fieldValue := reflect.New(field.Type)
+			rt := reflect.ValueOf(fieldValue.Interface())
+
+			embedType := reflect.Indirect(rt).Type()
+			if embedType.Kind() != reflect.Ptr && embedType.Kind() != reflect.Struct {
+				return nil, fmt.Errorf("embed only support [structure or pointer] but get %s", embedType.String())
+			}
+			if embedType.Kind() == reflect.Ptr {
+				embedType = embedType.Elem()
+			}
+			for j := 0; j < embedType.NumField(); j++ {
+				embedField := embedType.Field(j)
+				embedFieldTag := embedField.Tag.Get(DBTag)
+				embedFieldName := stringtool.ToSnake(embedField.Name)
+				if embedFieldName == IDField || embedFieldName == CreateTimeField {
+					return nil, fmt.Errorf("id or createTime field has exists in resource base")
+				}
+
+				if tagContains(embedFieldTag, "-") {
+					continue
+				}
+
+				if tagContains(embedFieldTag, "embed") {
+					fmt.Println("!!! not support multi embed", embedType)
+					break
+				}
+
+				if tagContains(embedFieldTag, "ownby") {
+					owners = append(owners, ResourceType(embedFieldName))
+				} else if tagContains(embedFieldTag, "referto") {
+					refers = append(refers, ResourceType(embedFieldName))
+				} else {
+					if newField, err := parseResourceField(embedFieldTag, embedFieldName, embedField.Type); err != nil {
+						fmt.Println(err.Error())
+					} else {
+						if _, ok := fieldSet[newField.Name]; ok {
+							return nil, fmt.Errorf("!!! field %s is duplicate\n", newField.Name)
+						}
+						fields = append(fields, *newField)
+						fieldSet[newField.Name] = struct{}{}
+					}
+				}
+
+				if tagContains(embedFieldTag, "pk") {
+					pks = append(pks, ResourceType(embedFieldName))
+				} else if tagContains(embedFieldTag, "uk") {
+					uks = append(uks, ResourceType(embedFieldName))
+				}
+			}
+
+			continue
+		}
+
 		if tagContains(fieldTag, "ownby") {
 			owners = append(owners, ResourceType(fieldName))
 		} else if tagContains(fieldTag, "referto") {
 			refers = append(refers, ResourceType(fieldName))
 		} else {
-			newField, err := parseField(fieldName, field.Type)
-			if err == nil {
-				if tagContains(fieldTag, "suk") {
-					newField.Unique = true
-				} else {
-					newField.Unique = false
-				}
-
-				if tagContains(fieldTag, "positive") {
-					newField.Check = Positive
-				}
-
-				if tagContains(fieldTag, "not null") {
-					newField.NotNull = true
+			if newField, err := parseResourceField(fieldTag, fieldName, field.Type); err != nil {
+				fmt.Println(err.Error())
+			} else {
+				if _, ok := fieldSet[newField.Name]; ok {
+					return nil, fmt.Errorf("!!! field %s is duplicate", field.Name)
 				}
 
 				fields = append(fields, *newField)
-			} else {
-				fmt.Printf("!!!! warning, field %s parse failed %s\n", fieldName, err.Error())
+				fieldSet[newField.Name] = struct{}{}
 			}
 		}
 
@@ -277,6 +323,29 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		Refers:         refers,
 		IsRelationship: len(fields) == 1 && len(owners) == 1 && len(refers) == 1,
 	}, nil
+}
+
+func parseResourceField(fieldTag, name string, typ reflect.Type) (*ResourceField, error) {
+	newField, err := parseField(name, typ)
+	if err != nil {
+		return nil, fmt.Errorf("!!!! warning, field %s parse failed %s\n", name, err.Error())
+	}
+
+	if tagContains(fieldTag, "suk") {
+		newField.Unique = true
+	} else {
+		newField.Unique = false
+	}
+
+	if tagContains(fieldTag, "positive") {
+		newField.Check = Positive
+	}
+
+	if tagContains(fieldTag, "not null") {
+		newField.NotNull = true
+	}
+
+	return newField, nil
 }
 
 func (meta *ResourceMeta) GetDescriptor(typ ResourceType) (*ResourceDescriptor, error) {
