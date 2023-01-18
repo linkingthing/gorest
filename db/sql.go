@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/linkingthing/cement/reflector"
 	"github.com/linkingthing/cement/stringtool"
 	"github.com/linkingthing/cement/uuid"
