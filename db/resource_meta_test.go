@@ -2,14 +2,14 @@ package db
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"net"
 	"net/netip"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	ut "github.com/linkingthing/cement/unittest"
 	"github.com/linkingthing/gorest/resource"
 )

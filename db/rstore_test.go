@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"net/netip"
 	"strconv"
 	"testing"
 	"time"
 
 	ut "github.com/linkingthing/cement/unittest"
 	"github.com/linkingthing/gorest/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 const ConnStr string = "user=lx password=lx host=localhost port=5432 database=lx sslmode=disable pool_max_conns=10"
@@ -519,5 +521,135 @@ func TestNotNullTag(t *testing.T) {
 	ut.Assert(t, err == nil, "")
 	for _, descriptor := range meta.GetDescriptors() {
 		t.Log(createTableSql(descriptor))
+	}
+}
+
+type Animal struct {
+	Name string `json:"name" db:"uk"`
+	Age  int    `json:"age"`
+}
+
+type Run struct {
+	Speed    int `json:"speed" db:"suk"`
+	Rotation int `json:"rotation"`
+}
+
+type Cat struct {
+	resource.ResourceBase
+	*Animal `db:"embed"`
+	Run     `db:"embed"`
+	Address string `json:"address" db:"uk"`
+}
+
+func TestEmbedResource(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&Cat{}})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, descriptor := range meta.GetDescriptors() {
+		t.Log(createTableSql(descriptor))
+	}
+}
+
+type IndexResource struct {
+	resource.ResourceBase `json:",inline"`
+	Name                  string     `json:"name" db:"nk"`
+	Brief                 string     `json:"brief" db:"suk"`
+	Age                   int        `json:"age" db:"uk"`
+	ParentId              string     `json:"parentId" db:"nk"`
+	Address               string     `json:"address" db:"uk"`
+	IpAddress             netip.Addr `json:"ipAddress"`
+	Street                string     `json:"street" db:"not null"`
+	Friends               []string   `json:"friends" db:"snk"`
+}
+
+func TestIndex(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, descriptor := range meta.GetDescriptors() {
+		table, indexes := createTableSql(descriptor)
+		t.Log(table)
+		for _, index := range indexes {
+			t.Log(index)
+		}
+	}
+}
+
+func TestFill(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
+	assert.NoError(t, err)
+	store, err := NewRStore("user=lx password=Linking@201907^%$# host=10.0.0.68 port=25432 database=lx sslmode=disable pool_max_conns=10", meta)
+	assert.NoError(t, err)
+
+	//var preData []*IndexResource
+	//address, err := netip.ParseAddr("10.0.0.1")
+	//assert.NoError(t, err)
+	//for i := 0; i < 10; i++ {
+	//	p := &IndexResource{
+	//		Name:      "name_" + strconv.Itoa(i),
+	//		ParentId:  "parent_" + strconv.Itoa(i),
+	//		Age:       i,
+	//		Street:    "local",
+	//		Brief:     "brief_" + strconv.Itoa(i),
+	//		Address:   "address_" + strconv.Itoa(i),
+	//		IpAddress: address,
+	//		Friends:   []string{"j", strconv.Itoa(i)},
+	//	}
+	//	preData = append(preData, p)
+	//	address = address.Next()
+	//}
+	//assert.NoError(t, WithTx(store, func(tx Transaction) error {
+	//	for _, datum := range preData {
+	//		_, err := tx.Insert(datum)
+	//		assert.NoError(t, err)
+	//	}
+	//	return nil
+	//}))
+
+	var result []*IndexResource
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		return tx.Fill(map[string]interface{}{
+			//"name": FillValue{Value: "1", Operator: OperatorLikePrefix},
+			//"name": FillValue{Value: "name_1", Operator: OperatorLikeSuffix},
+			"name": "name_4",
+		}, &result)
+	}))
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		return tx.Fill(map[string]interface{}{
+			//"address":    FillValue{Value: []string{"address_1"}, Operator: OperatorAny},
+			//"friends":    FillValue{Value: []string{"1"}, Operator: OperatorOverlap},
+			//"ip_address": FillValue{Value: "10.0.0.2", Operator: OperatorSubnetContainEqBy},
+			//"ip_address": FillValue{Value: "10.0.0.2", Operator: OperatorSubnetContainEq},
+			"ip_address": FillValue{Value: "10.0.0.0/24", Operator: OperatorSubnetContainBy},
+		}, &result)
+	}))
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		return tx.Fill(map[string]interface{}{
+			"name": FillValue{Value: "name_1", Operator: OperatorNe},
+			//"age":  FillValue{Value: 5, Operator: OperatorLt},
+			//"age": FillValue{Value: 5, Operator: OperatorLte},
+			//"age": FillValue{Value: 1, Operator: OperatorGt},
+			"age": FillValue{Value: 1, Operator: OperatorGte},
+		}, &result)
+	}))
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		return tx.Fill(map[string]interface{}{
+			//"name": FillValue{Value: "1", Operator: OperatorLikePrefix},
+			//"name": FillValue{Value: "name_1", Operator: OperatorLikeSuffix},
+			"name": FillValue{Value: "me", Operator: OperatorLike},
+		}, &result)
+	}))
+
+	for _, r := range result {
+		t.Logf("result:%+v", r)
 	}
 }

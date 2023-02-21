@@ -52,6 +52,17 @@ var postgresqlTypeMap = map[Datatype]string{
 
 const EmbedResource string = "ResourceBase"
 const DBTag string = "db"
+const (
+	TagUnique       = "uk"
+	TagSingleUnique = "suk"
+	TagIndex        = "nk"
+	TagSingleIndex  = "snk"
+	TagPrimary      = "pk"
+	TagOwnby        = "ownby"
+	TagReferto      = "referto"
+	TagEmbed        = "embed"
+	IndexPrefix     = "idx_"
+)
 
 type Check string
 
@@ -64,6 +75,7 @@ type ResourceField struct {
 	Name    string
 	Type    Datatype
 	Unique  bool
+	Index   bool
 	Check   Check
 	NotNull bool
 }
@@ -73,6 +85,7 @@ type ResourceDescriptor struct {
 	Fields         []ResourceField
 	Pks            []ResourceType
 	Uks            []ResourceType
+	Idxes          []string
 	Owners         []ResourceType
 	Refers         []ResourceType
 	IsRelationship bool
@@ -227,6 +240,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 	var uks []ResourceType
 	var owners []ResourceType
 	var refers []ResourceType
+	var idxes []string
 
 	goTyp := reflect.TypeOf(r)
 	if goTyp.Kind() != reflect.Ptr || goTyp.Elem().Kind() != reflect.Struct {
@@ -253,12 +267,14 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		if tagContains(fieldTag, "embed") {
 			fieldValue := reflect.New(field.Type)
 			rt := reflect.ValueOf(fieldValue.Interface())
-			if rt.Kind() != reflect.Ptr && rt.Kind() != reflect.Struct {
-				return nil, fmt.Errorf("need structure pointer but get %s", rt.String())
-			}
 
 			embedType := reflect.Indirect(rt).Type()
-			embedType = embedType.Elem()
+			if embedType.Kind() != reflect.Ptr && embedType.Kind() != reflect.Struct {
+				return nil, fmt.Errorf("embed only support [structure or pointer] but get %s", embedType.String())
+			}
+			if embedType.Kind() == reflect.Ptr {
+				embedType = embedType.Elem()
+			}
 			for j := 0; j < embedType.NumField(); j++ {
 				embedField := embedType.Field(j)
 				embedFieldTag := embedField.Tag.Get(DBTag)
@@ -271,40 +287,42 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 					continue
 				}
 
-				if tagContains(embedFieldTag, "embed") {
+				if tagContains(embedFieldTag, TagEmbed) {
 					fmt.Println("!!! not support multi embed", embedType)
 					break
 				}
 
-				if tagContains(embedFieldTag, "ownby") {
+				if tagContains(embedFieldTag, TagOwnby) {
 					owners = append(owners, ResourceType(embedFieldName))
-				} else if tagContains(embedFieldTag, "referto") {
+				} else if tagContains(embedFieldTag, TagReferto) {
 					refers = append(refers, ResourceType(embedFieldName))
 				} else {
 					if newField, err := parseResourceField(embedFieldTag, embedFieldName, embedField.Type); err != nil {
 						fmt.Println(err.Error())
 					} else {
 						if _, ok := fieldSet[newField.Name]; ok {
-							return nil, fmt.Errorf("!!! field %s is duplicate\n", field.Name)
+							return nil, fmt.Errorf("!!! field %s is duplicate\n", newField.Name)
 						}
 						fields = append(fields, *newField)
 						fieldSet[newField.Name] = struct{}{}
 					}
 				}
 
-				if tagContains(embedFieldTag, "pk") {
+				if tagContains(embedFieldTag, TagPrimary) {
 					pks = append(pks, ResourceType(embedFieldName))
-				} else if tagContains(embedFieldTag, "uk") {
+				} else if tagContains(embedFieldTag, TagUnique) {
 					uks = append(uks, ResourceType(embedFieldName))
+				} else if tagContains(fieldTag, TagIndex) {
+					idxes = append(idxes, fieldName)
 				}
 			}
 
 			continue
 		}
 
-		if tagContains(fieldTag, "ownby") {
+		if tagContains(fieldTag, TagOwnby) {
 			owners = append(owners, ResourceType(fieldName))
-		} else if tagContains(fieldTag, "referto") {
+		} else if tagContains(fieldTag, TagReferto) {
 			refers = append(refers, ResourceType(fieldName))
 		} else {
 			if newField, err := parseResourceField(fieldTag, fieldName, field.Type); err != nil {
@@ -319,10 +337,12 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 			}
 		}
 
-		if tagContains(fieldTag, "pk") {
+		if tagContains(fieldTag, TagPrimary) {
 			pks = append(pks, ResourceType(fieldName))
-		} else if tagContains(fieldTag, "uk") {
+		} else if tagContains(fieldTag, TagUnique) {
 			uks = append(uks, ResourceType(fieldName))
+		} else if tagContains(fieldTag, TagIndex) {
+			idxes = append(idxes, fieldName)
 		}
 	}
 
@@ -331,6 +351,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		Fields:         fields,
 		Pks:            pks,
 		Uks:            uks,
+		Idxes:          idxes,
 		Owners:         owners,
 		Refers:         refers,
 		IsRelationship: len(fields) == 1 && len(owners) == 1 && len(refers) == 1,
@@ -343,10 +364,16 @@ func parseResourceField(fieldTag, name string, typ reflect.Type) (*ResourceField
 		return nil, fmt.Errorf("!!!! warning, field %s parse failed %s\n", name, err.Error())
 	}
 
-	if tagContains(fieldTag, "suk") {
+	if tagContains(fieldTag, TagSingleUnique) {
 		newField.Unique = true
 	} else {
 		newField.Unique = false
+	}
+
+	if tagContains(fieldTag, TagSingleIndex) {
+		newField.Index = true
+	} else {
+		newField.Index = false
 	}
 
 	if tagContains(fieldTag, "positive") {
