@@ -122,7 +122,7 @@ func createTableSql(descriptor *ResourceDescriptor) (string, []string) {
 	if len(descriptor.Idxes) > 0 {
 		idxBuf.WriteString("create index ")
 		idxBuf.WriteString(" if not exists ")
-		idxBuf.WriteString(IndexPrefix + tableName + strings.Join(descriptor.Idxes, "_"))
+		idxBuf.WriteString(IndexPrefix + tableName + "_" + strings.Join(descriptor.Idxes, "_"))
 		idxBuf.WriteString(" on ")
 		idxBuf.WriteString(tableName)
 		idxBuf.WriteString(" (")
@@ -141,7 +141,7 @@ func createTableSql(descriptor *ResourceDescriptor) (string, []string) {
 		for _, index := range indexes {
 			idxBuf.WriteString("create index ")
 			idxBuf.WriteString(" if not exists ")
-			idxBuf.WriteString(IndexPrefix + tableName + index)
+			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
 			idxBuf.WriteString(tableName)
 			idxBuf.WriteString(" (")
@@ -157,7 +157,7 @@ func createTableSql(descriptor *ResourceDescriptor) (string, []string) {
 		for _, index := range ginIndexes {
 			idxBuf.WriteString("create index ")
 			idxBuf.WriteString(" if not exists ")
-			idxBuf.WriteString(IndexPrefix + tableName + index)
+			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
 			idxBuf.WriteString(tableName)
 			idxBuf.WriteString(" using gin")
@@ -342,9 +342,19 @@ func updateSqlAndArgs(meta *ResourceMeta, typ ResourceType, newVals map[string]i
 	}
 
 	for k, v := range conds {
-		whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
-		args = append(args, v)
-		markerSeq += 1
+		if vf, ok := v.(FillValue); ok {
+			s, arg, err := vf.buildSql(k, markerSeq)
+			if err != nil {
+				return "", nil, err
+			}
+			whereState = append(whereState, s)
+			args = append(args, arg)
+			markerSeq += 1
+		} else {
+			whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
+			args = append(args, v)
+			markerSeq += 1
+		}
 	}
 
 	setSeq := strings.Join(setState, ",")

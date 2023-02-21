@@ -584,7 +584,7 @@ func TestIndex(t *testing.T) {
 func TestFill(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore("user=lx password=Linking@201907^%$# host=10.0.0.68 port=25432 database=lx sslmode=disable pool_max_conns=10", meta)
+	store, err := NewRStore(ConnStr, meta)
 	assert.NoError(t, err)
 
 	//var preData []*IndexResource
@@ -652,4 +652,45 @@ func TestFill(t *testing.T) {
 	for _, r := range result {
 		t.Logf("result:%+v", r)
 	}
+}
+
+func TestUpdate(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
+	assert.NoError(t, err)
+	store, err := NewRStore(ConnStr, meta)
+	assert.NoError(t, err)
+
+	var preData []*IndexResource
+	address, err := netip.ParseAddr("10.0.0.1")
+	assert.NoError(t, err)
+	for i := 0; i < 10; i++ {
+		p := &IndexResource{
+			Name:      "name_" + strconv.Itoa(i),
+			ParentId:  "parent_" + strconv.Itoa(i),
+			Age:       i,
+			Street:    "local",
+			Brief:     "brief_" + strconv.Itoa(i),
+			Address:   "address_" + strconv.Itoa(i),
+			IpAddress: address,
+			Friends:   []string{"j", strconv.Itoa(i)},
+		}
+		preData = append(preData, p)
+		address = address.Next()
+	}
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		for _, datum := range preData {
+			_, err := tx.Insert(datum)
+			assert.NoError(t, err)
+		}
+		return nil
+	}))
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		_, err := tx.Update(ResourceDBType(&IndexResource{}),
+			map[string]interface{}{"name": "joker"},
+			map[string]interface{}{
+				"name": FillValue{Value: "name_1", Operator: OperatorNe},
+			})
+		return err
+	}))
 }
