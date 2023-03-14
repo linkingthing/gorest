@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/linkingthing/gorest/error"
-	"github.com/linkingthing/gorest/util"
 )
 
 const (
@@ -111,12 +110,6 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 	var pagination Pagination
 	var err *error.APIError
 	for k, v := range valueMap {
-		if !validateQueryValue(v) {
-			return nil, nil, error.NewAPIError(error.InvalidFormat,
-				*error.NewErrorMessage(fmt.Sprintf("invalid query value:%s", v),
-					fmt.Sprintf(error.ErrorCHNameInvalidQuery, v)))
-		}
-
 		filter := Filter{
 			Name:     k,
 			Modifier: Eq,
@@ -145,18 +138,6 @@ func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error
 	}
 
 	return filters, &pagination, nil
-}
-
-func validateQueryValue(values []string) bool {
-	for i, v := range values {
-		v = strings.TrimSpace(v)
-		if err := util.ValidateString(v); err != nil {
-			return false
-		}
-		values[i] = v
-	}
-
-	return true
 }
 
 func filtersValuesToInt(values []string) (int, *error.APIError) {

@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/linkingthing/cement/reflector"
 	"github.com/linkingthing/gorest/resource"
 )
@@ -23,7 +23,7 @@ type RStoreTx struct {
 }
 
 func NewRStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
-	pool, err := pgxpool.Connect(context.TODO(), connStr)
+	pool, err := pgxpool.New(context.TODO(), connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +38,19 @@ func NewRStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
 		}
 
 		for _, descriptor := range meta.GetDescriptors() {
-			_, err := pool.Exec(context.TODO(), createTableSql(descriptor))
+			cTable, cIndexes := createTableSql(descriptor)
+			_, err := pool.Exec(context.TODO(), cTable)
 			if err != nil {
 				pool.Close()
 				return nil, err
+			}
+
+			for _, index := range cIndexes {
+				_, err := pool.Exec(context.TODO(), index)
+				if err != nil {
+					pool.Close()
+					return nil, err
+				}
 			}
 		}
 	}
@@ -142,6 +151,7 @@ func (tx RStoreTx) Fill(conds map[string]interface{}, out interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return tx.getWithSql(sql, args, out)
 }
 

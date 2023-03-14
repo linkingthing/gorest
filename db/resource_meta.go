@@ -52,6 +52,17 @@ var postgresqlTypeMap = map[Datatype]string{
 
 const EmbedResource string = "ResourceBase"
 const DBTag string = "db"
+const (
+	TagUnique       = "uk"
+	TagSingleUnique = "suk"
+	TagIndex        = "nk"
+	TagSingleIndex  = "snk"
+	TagPrimary      = "pk"
+	TagOwnby        = "ownby"
+	TagReferto      = "referto"
+	TagEmbed        = "embed"
+	IndexPrefix     = "idx_"
+)
 
 type Check string
 
@@ -64,6 +75,7 @@ type ResourceField struct {
 	Name    string
 	Type    Datatype
 	Unique  bool
+	Index   bool
 	Check   Check
 	NotNull bool
 }
@@ -73,6 +85,7 @@ type ResourceDescriptor struct {
 	Fields         []ResourceField
 	Pks            []ResourceType
 	Uks            []ResourceType
+	Idxes          []string
 	Owners         []ResourceType
 	Refers         []ResourceType
 	IsRelationship bool
@@ -169,6 +182,12 @@ func parseField(name string, typ reflect.Type) (*ResourceField, error) {
 			return &ResourceField{Name: name, Type: Time}, nil
 		case "net.IPNet":
 			return &ResourceField{Name: name, Type: IPNet}, nil
+		case "netip.Addr":
+			return &ResourceField{Name: name, Type: IP}, nil
+		case "netip.Prefix":
+			return &ResourceField{Name: name, Type: IPNet}, nil
+		case "pgtype.InetArray":
+			return &ResourceField{Name: name, Type: IPNetSlice}, nil
 		default:
 			return nil, fmt.Errorf("type of field %s isn't supported:%v", name, typ.String())
 		}
@@ -189,11 +208,19 @@ func parseField(name string, typ reflect.Type) (*ResourceField, error) {
 			return &ResourceField{Name: name, Type: Float32Array}, nil
 		case reflect.String:
 			return &ResourceField{Name: name, Type: StringArray}, nil
+		case reflect.Ptr:
+			if typ.String() == "[]*net.IPNet" || typ.String() == "[]*net.IP" {
+				return &ResourceField{Name: name, Type: IPNetSlice}, nil
+			}
+			if typ.String() == "[]*netip.Addr" || typ.String() == "[]*netip.Prefix" {
+				return &ResourceField{Name: name, Type: IPNetSlice}, nil
+			}
+			return nil, fmt.Errorf("type of field %s isn't supported:%v", name, typ.String())
 		default:
 			elemType := typ.Elem().String()
-			if elemType == "net.IP" {
+			if elemType == "net.IP" || elemType == "netip.Addr" {
 				return &ResourceField{Name: name, Type: IPSlice}, nil
-			} else if elemType == "net.IPNet" {
+			} else if elemType == "net.IPNet" || elemType == "netip.Prefix" {
 				return &ResourceField{Name: name, Type: IPNetSlice}, nil
 			} else {
 				return nil, fmt.Errorf("type of field %s isn't supported:[%v]", name, elemKind.String())
@@ -213,6 +240,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 	var uks []ResourceType
 	var owners []ResourceType
 	var refers []ResourceType
+	var idxes []string
 
 	goTyp := reflect.TypeOf(r)
 	if goTyp.Kind() != reflect.Ptr || goTyp.Elem().Kind() != reflect.Struct {
@@ -259,14 +287,24 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 					continue
 				}
 
+<<<<<<< HEAD
 				if tagContains(embedFieldTag, "embed") {
+=======
+				if tagContains(embedFieldTag, TagEmbed) {
+>>>>>>> master
 					fmt.Println("!!! not support multi embed", embedType)
 					break
 				}
 
+<<<<<<< HEAD
 				if tagContains(embedFieldTag, "ownby") {
 					owners = append(owners, ResourceType(embedFieldName))
 				} else if tagContains(embedFieldTag, "referto") {
+=======
+				if tagContains(embedFieldTag, TagOwnby) {
+					owners = append(owners, ResourceType(embedFieldName))
+				} else if tagContains(embedFieldTag, TagReferto) {
+>>>>>>> master
 					refers = append(refers, ResourceType(embedFieldName))
 				} else {
 					if newField, err := parseResourceField(embedFieldTag, embedFieldName, embedField.Type); err != nil {
@@ -280,19 +318,32 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 					}
 				}
 
+<<<<<<< HEAD
 				if tagContains(embedFieldTag, "pk") {
 					pks = append(pks, ResourceType(embedFieldName))
 				} else if tagContains(embedFieldTag, "uk") {
 					uks = append(uks, ResourceType(embedFieldName))
+=======
+				if tagContains(embedFieldTag, TagPrimary) {
+					pks = append(pks, ResourceType(embedFieldName))
+				} else if tagContains(embedFieldTag, TagUnique) {
+					uks = append(uks, ResourceType(embedFieldName))
+				} else if tagContains(fieldTag, TagIndex) {
+					idxes = append(idxes, fieldName)
+>>>>>>> master
 				}
 			}
 
 			continue
 		}
 
+<<<<<<< HEAD
 		if tagContains(fieldTag, "ownby") {
+=======
+		if tagContains(fieldTag, TagOwnby) {
+>>>>>>> master
 			owners = append(owners, ResourceType(fieldName))
-		} else if tagContains(fieldTag, "referto") {
+		} else if tagContains(fieldTag, TagReferto) {
 			refers = append(refers, ResourceType(fieldName))
 		} else {
 			if newField, err := parseResourceField(fieldTag, fieldName, field.Type); err != nil {
@@ -307,10 +358,12 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 			}
 		}
 
-		if tagContains(fieldTag, "pk") {
+		if tagContains(fieldTag, TagPrimary) {
 			pks = append(pks, ResourceType(fieldName))
-		} else if tagContains(fieldTag, "uk") {
+		} else if tagContains(fieldTag, TagUnique) {
 			uks = append(uks, ResourceType(fieldName))
+		} else if tagContains(fieldTag, TagIndex) {
+			idxes = append(idxes, fieldName)
 		}
 	}
 
@@ -319,6 +372,7 @@ func genDescriptor(r resource.Resource) (*ResourceDescriptor, error) {
 		Fields:         fields,
 		Pks:            pks,
 		Uks:            uks,
+		Idxes:          idxes,
 		Owners:         owners,
 		Refers:         refers,
 		IsRelationship: len(fields) == 1 && len(owners) == 1 && len(refers) == 1,
@@ -331,12 +385,25 @@ func parseResourceField(fieldTag, name string, typ reflect.Type) (*ResourceField
 		return nil, fmt.Errorf("!!!! warning, field %s parse failed %s\n", name, err.Error())
 	}
 
+<<<<<<< HEAD
 	if tagContains(fieldTag, "suk") {
+=======
+	if tagContains(fieldTag, TagSingleUnique) {
+>>>>>>> master
 		newField.Unique = true
 	} else {
 		newField.Unique = false
 	}
 
+<<<<<<< HEAD
+=======
+	if tagContains(fieldTag, TagSingleIndex) {
+		newField.Index = true
+	} else {
+		newField.Index = false
+	}
+
+>>>>>>> master
 	if tagContains(fieldTag, "positive") {
 		newField.Check = Positive
 	}

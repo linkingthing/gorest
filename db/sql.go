@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/linkingthing/cement/reflector"
 	"github.com/linkingthing/cement/stringtool"
 	"github.com/linkingthing/cement/uuid"
@@ -37,12 +37,15 @@ func resourceTableNameWithoutSchema(typ ResourceType) string {
 	return TablePrefix + string(typ)
 }
 
-func createTableSql(descriptor *ResourceDescriptor) string {
+func createTableSql(descriptor *ResourceDescriptor) (string, []string) {
 	var buf bytes.Buffer
 	buf.WriteString("create table if not exists ")
 	buf.WriteString(resourceTableName(descriptor.Typ))
 	buf.WriteString(" (")
+	tableName := resourceTableNameWithoutSchema(descriptor.Typ)
 
+	var indexes []string
+	var ginIndexes []string
 	for _, field := range descriptor.Fields {
 		buf.WriteString(field.Name)
 		buf.WriteString(" ")
@@ -56,6 +59,16 @@ func createTableSql(descriptor *ResourceDescriptor) string {
 		if field.Unique {
 			buf.WriteString(" ")
 			buf.WriteString("unique")
+		}
+
+		if field.Index {
+			if field.Type == StringArray || field.Type == IPSlice || field.Type == IPNetSlice ||
+				field.Type == SmallIntArray || field.Type == BigIntArray || field.Type == SuperIntArray ||
+				field.Type == Float32Array {
+				ginIndexes = append(ginIndexes, field.Name)
+			} else {
+				indexes = append(indexes, field.Name)
+			}
 		}
 
 		if field.Check == Positive {
@@ -104,7 +117,60 @@ func createTableSql(descriptor *ResourceDescriptor) string {
 		buf.WriteString("),")
 	}
 
-	return strings.TrimRight(buf.String(), ",") + ")"
+	var idxBuf bytes.Buffer
+	var createIndexes []string
+	if len(descriptor.Idxes) > 0 {
+		idxBuf.WriteString("create index ")
+		idxBuf.WriteString(" if not exists ")
+		idxBuf.WriteString(IndexPrefix + tableName + "_" + strings.Join(descriptor.Idxes, "_"))
+		idxBuf.WriteString(" on ")
+		idxBuf.WriteString(tableName)
+		idxBuf.WriteString(" (")
+		for i, idx := range descriptor.Idxes {
+			idxBuf.WriteString(idx)
+			if i < len(descriptor.Idxes)-1 {
+				idxBuf.WriteString(",")
+			}
+		}
+		idxBuf.WriteString(")")
+		createIndexes = append(createIndexes, idxBuf.String())
+		idxBuf.Reset()
+	}
+
+	if len(indexes) > 0 {
+		for _, index := range indexes {
+			idxBuf.WriteString("create index ")
+			idxBuf.WriteString(" if not exists ")
+			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
+			idxBuf.WriteString(" on ")
+			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(" (")
+			idxBuf.WriteString(index)
+			idxBuf.WriteString(")")
+
+			createIndexes = append(createIndexes, idxBuf.String())
+			idxBuf.Reset()
+		}
+	}
+
+	if len(ginIndexes) > 0 {
+		for _, index := range ginIndexes {
+			idxBuf.WriteString("create index ")
+			idxBuf.WriteString(" if not exists ")
+			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
+			idxBuf.WriteString(" on ")
+			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(" using gin")
+			idxBuf.WriteString(" (")
+			idxBuf.WriteString(index)
+			idxBuf.WriteString(")")
+
+			createIndexes = append(createIndexes, idxBuf.String())
+			idxBuf.Reset()
+		}
+	}
+
+	return strings.TrimRight(buf.String(), ",") + ")", createIndexes
 }
 
 func insertSqlArgsAndID(meta *ResourceMeta, r resource.Resource) (string, []interface{}, error) {
@@ -276,9 +342,19 @@ func updateSqlAndArgs(meta *ResourceMeta, typ ResourceType, newVals map[string]i
 	}
 
 	for k, v := range conds {
-		whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
-		args = append(args, v)
-		markerSeq += 1
+		if vf, ok := v.(FillValue); ok {
+			s, arg, err := vf.buildSql(k, markerSeq)
+			if err != nil {
+				return "", nil, err
+			}
+			whereState = append(whereState, s)
+			args = append(args, arg)
+			markerSeq += 1
+		} else {
+			whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
+			args = append(args, v)
+			markerSeq += 1
+		}
 	}
 
 	setSeq := strings.Join(setState, ",")
@@ -378,9 +454,19 @@ func getSqlWhereState(conds map[string]interface{}) (string, []interface{}, erro
 				return "", nil, fmt.Errorf("match condition isn't string, but %v", v)
 			}
 		} else {
-			whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
-			args = append(args, v)
-			markerSeq += 1
+			if vf, ok := v.(FillValue); ok {
+				s, arg, err := vf.buildSql(k, markerSeq)
+				if err != nil {
+					return "", nil, err
+				}
+				whereState = append(whereState, s)
+				args = append(args, arg)
+				markerSeq += 1
+			} else {
+				whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
+				args = append(args, v)
+				markerSeq += 1
+			}
 		}
 	}
 
