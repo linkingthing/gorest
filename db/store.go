@@ -35,8 +35,10 @@ type Transaction interface {
 	CountEx(typ ResourceType, sql string, params ...interface{}) (int64, error)
 	FillEx(out interface{}, sql string, params ...interface{}) error
 	Exec(sql string, params ...interface{}) (int64, error)
-	// CopyFromEx the order of columns should the same with values
+	// CopyFromEx The values should be in the same order as the columns
 	CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error)
+	// CopyFrom The values should be in the same order as the columns
+	CopyFrom(typ ResourceType, values [][]interface{}) (int64, error)
 
 	Commit() error
 	Rollback() error

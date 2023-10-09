@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const ConnStr string = "user=lx password=lx host=localhost port=5432 database=lx sslmode=disable pool_max_conns=10"
+const ConnStr string = "user=lx password=lx host=lx port=5432 database=lx sslmode=disable pool_max_conns=10"
 
 type Child struct {
 	resource.ResourceBase
@@ -530,11 +530,7 @@ type Animal struct {
 }
 
 type Run struct {
-<<<<<<< HEAD
-	Speed    int `json:"speed"`
-=======
 	Speed    int `json:"speed" db:"suk"`
->>>>>>> master
 	Rotation int `json:"rotation"`
 }
 
@@ -556,8 +552,6 @@ func TestEmbedResource(t *testing.T) {
 		t.Log(createTableSql(descriptor))
 	}
 }
-<<<<<<< HEAD
-=======
 
 type IndexResource struct {
 	resource.ResourceBase `json:",inline"`
@@ -569,6 +563,21 @@ type IndexResource struct {
 	IpAddress             netip.Addr `json:"ipAddress"`
 	Street                string     `json:"street" db:"not null"`
 	Friends               []string   `json:"friends" db:"snk"`
+}
+
+func (idx *IndexResource) GenCopyValues() []any {
+	return []any{
+		idx.GetID(),
+		time.Now(),
+		idx.Name,
+		idx.Brief,
+		idx.Age,
+		idx.ParentId,
+		idx.Address,
+		idx.IpAddress,
+		idx.Street,
+		idx.Friends,
+	}
 }
 
 func TestIndex(t *testing.T) {
@@ -592,6 +601,10 @@ func TestFill(t *testing.T) {
 	assert.NoError(t, err)
 	store, err := NewRStore(ConnStr, meta)
 	assert.NoError(t, err)
+
+	for _, m := range meta.GetDescriptors() {
+		t.Logf("%+v", m)
+	}
 
 	//var preData []*IndexResource
 	//address, err := netip.ParseAddr("10.0.0.1")
@@ -700,4 +713,32 @@ func TestUpdate(t *testing.T) {
 		return err
 	}))
 }
->>>>>>> master
+
+func TestCopyFrom(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
+	assert.NoError(t, err)
+	store, err := NewRStore(ConnStr, meta)
+	assert.NoError(t, err)
+
+	var copyValues [][]any
+	for i := 0; i < 3; i++ {
+		idx := &IndexResource{
+			Name:      "name-" + strconv.Itoa(i),
+			Brief:     "brief-" + strconv.Itoa(i),
+			Age:       i,
+			ParentId:  strconv.Itoa(i),
+			Address:   "address:" + strconv.Itoa(i),
+			Street:    "",
+			IpAddress: netip.MustParseAddr("192.168.1.1"),
+			Friends:   []string{"joker", "json"},
+		}
+
+		idx.SetID(strconv.Itoa(i))
+		copyValues = append(copyValues, idx.GenCopyValues())
+	}
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		_, err := tx.CopyFrom(ResourceDBType(&IndexResource{}), copyValues)
+		return err
+	}))
+}

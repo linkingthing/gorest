@@ -283,6 +283,27 @@ func (tx RStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]int
 	return c, err
 }
 
+func (tx RStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64, error) {
+	descriptor, err := tx.meta.GetDescriptor(typ)
+	if err != nil {
+		return 0, fmt.Errorf("get descriptor for %v failed %v", typ, err.Error())
+	}
+
+	columns := make([]string, 0, len(descriptor.Fields))
+	for _, field := range descriptor.Fields {
+		columns = append(columns, field.Name)
+	}
+	if len(values) == 0 || len(columns) == 0 {
+		return 0, nil
+	}
+
+	c, err := tx.Tx.CopyFrom(context.Background(),
+		pgx.Identifier{SchemaName, resourceTableNameWithoutSchema(descriptor.Typ)},
+		columns,
+		pgx.CopyFromRows(values))
+	return c, err
+}
+
 func (tx RStoreTx) Commit() error {
 	return tx.Tx.Commit(context.TODO())
 }
