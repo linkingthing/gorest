@@ -64,7 +64,6 @@ func (f FillValue) buildSql(key string, markerSeq int) (string, any, error) {
 			return "", nil, fmt.Errorf("any value should be slice, but %v", f.Value)
 		}
 		v := reflect.ValueOf(f.Value)
-		fmt.Println(v.Len())
 		var fKind = reflect.String
 		var typStr string
 		if v.Len() > 0 {
