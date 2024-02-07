@@ -273,9 +273,19 @@ func deleteSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	args := make([]interface{}, 0, len(conds))
 	markerSeq := 1
 	for k, v := range conds {
-		whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
-		args = append(args, v)
-		markerSeq += 1
+		if vf, ok := v.(FillValue); ok {
+			s, arg, err := vf.buildSql(k, markerSeq)
+			if err != nil {
+				return "", nil, err
+			}
+			whereState = append(whereState, s)
+			args = append(args, arg)
+			markerSeq += 1
+		} else {
+			whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
+			args = append(args, v)
+			markerSeq += 1
+		}
 	}
 	whereSeq := strings.Join(whereState, " and ")
 	return strings.Join([]string{"delete from", resourceTableName(descriptor.Typ), "where", whereSeq}, " "), args, nil
@@ -297,9 +307,19 @@ func existsSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	markerSeq := 1
 
 	for k, v := range conds {
-		whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
-		args = append(args, v)
-		markerSeq += 1
+		if vf, ok := v.(FillValue); ok {
+			s, arg, err := vf.buildSql(k, markerSeq)
+			if err != nil {
+				return "", nil, err
+			}
+			whereState = append(whereState, s)
+			args = append(args, arg)
+			markerSeq += 1
+		} else {
+			whereState = append(whereState, stringtool.ToSnake(k)+"=$"+strconv.Itoa(markerSeq))
+			args = append(args, v)
+			markerSeq += 1
+		}
 	}
 
 	whereSeq := strings.Join(whereState, " and ")
