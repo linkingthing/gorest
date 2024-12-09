@@ -16,8 +16,10 @@ import (
 	"github.com/linkingthing/gorest/resource"
 )
 
-const TablePrefix = "gr_"
-const TablePrefixWithSchema = SchemaName + "." + TablePrefix
+var (
+	TablePrefix           = "gr_"
+	TablePrefixWithSchema = SchemaName + "." + TablePrefix
+)
 
 const (
 	joinSqlTemplateContent string = "select {{.OwnedTable}}.* from {{.OwnedTable}} inner join {{.RelTable}} on ({{.OwnedTable}}.id={{.RelTable}}.{{.Owned}} and {{.RelTable}}.{{.Owner}}=$1)"
@@ -27,6 +29,12 @@ var joinSqlTemplate *template.Template
 
 func init() {
 	joinSqlTemplate, _ = template.New("").Parse(joinSqlTemplateContent)
+}
+
+func SetTablePrefix(prefix string) {
+	if len(prefix) != 0 {
+		TablePrefix = prefix
+	}
 }
 
 func resourceTableName(typ ResourceType) string {
@@ -291,7 +299,7 @@ func deleteSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	return strings.Join([]string{"delete from", resourceTableName(descriptor.Typ), "where", whereSeq}, " "), args, nil
 }
 
-//select count(*) from zc_zone where zdnsuser=$1
+// select count(*) from zc_zone where zdnsuser=$1
 func existsSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]interface{}) (string, []interface{}, error) {
 	descriptor, err := meta.GetDescriptor(typ)
 	if err != nil {
@@ -326,7 +334,7 @@ func existsSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]int
 	return strings.Join([]string{"select (exists (select 1 from ", resourceTableName(descriptor.Typ), "where", whereSeq, "limit 1))"}, " "), args, nil
 }
 
-//select count(*) from zc_zone where zdnsuser=$1
+// select count(*) from zc_zone where zdnsuser=$1
 func countSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]interface{}) (string, []interface{}, error) {
 	descriptor, err := meta.GetDescriptor(typ)
 	if err != nil {
@@ -343,7 +351,7 @@ func countSqlAndArgs(meta *ResourceMeta, typ ResourceType, conds map[string]inte
 	}
 }
 
-//UPDATE films SET kind = 'Dramatic' WHERE kind = 'Drama';
+// UPDATE films SET kind = 'Dramatic' WHERE kind = 'Drama';
 func updateSqlAndArgs(meta *ResourceMeta, typ ResourceType, newVals map[string]interface{}, conds map[string]interface{}) (string, []interface{}, error) {
 	descriptor, err := meta.GetDescriptor(typ)
 	if err != nil {
