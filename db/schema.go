@@ -13,11 +13,6 @@ const (
 )
 
 func InitSchema(pool *pgxpool.Pool) error {
-	_, err := pool.Exec(context.TODO(), dropPublicSchemaSql)
-	if err != nil {
-		return err
-	}
-
-	_, err = pool.Exec(context.TODO(), createLxSchemaSql)
+	_, err := pool.Exec(context.TODO(), createLxSchemaSql)
 	return err
 }
