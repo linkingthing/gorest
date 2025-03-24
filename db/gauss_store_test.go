@@ -109,6 +109,9 @@ func TestInsert(t *testing.T) {
 	r.SetID("test-1")
 
 	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		if _, err := tx.Delete(TableGaussResource, nil); err != nil {
+			return err
+		}
 		if _, err := tx.Insert(r); err != nil {
 			return err
 		}
@@ -140,6 +143,9 @@ func TestDelete(t *testing.T) {
 	r.SetID("test-1")
 
 	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		if _, err := tx.Delete(TableGaussResource, nil); err != nil {
+			return err
+		}
 		if _, err := tx.Insert(r); err != nil {
 			return err
 		}
