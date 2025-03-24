@@ -555,14 +555,15 @@ func TestEmbedResource(t *testing.T) {
 
 type IndexResource struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string     `json:"name" db:"nk"`
-	Brief                 string     `json:"brief" db:"suk"`
-	Age                   int        `json:"age" db:"uk"`
-	ParentId              string     `json:"parentId" db:"nk"`
-	Address               string     `json:"address" db:"uk"`
-	IpAddress             netip.Addr `json:"ipAddress"`
-	Street                string     `json:"street" db:"not null"`
-	Friends               []string   `json:"friends" db:"snk"`
+	Name                  string       `json:"name" db:"nk"`
+	Brief                 string       `json:"brief" db:"suk"`
+	Age                   int          `json:"age" db:"uk"`
+	ParentId              string       `json:"parentId" db:"nk"`
+	Address               string       `json:"address" db:"uk"`
+	IpAddress             netip.Addr   `json:"ipAddress"`
+	Prefix                netip.Prefix `json:"prefix"`
+	Street                string       `json:"street" db:"not null"`
+	Friends               []string     `json:"friends" db:"snk"`
 }
 
 func (idx *IndexResource) GenCopyValues() []any {

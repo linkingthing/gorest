@@ -26,7 +26,7 @@ var _ Field = &sliceStructField{}
 var _ Field = &mapLeafField{}
 var _ Field = &mapStructField{}
 
-//field with type, int, string, boolean
+// field with type, int, string, boolean
 type leafField struct {
 	name       string
 	jsonName   string

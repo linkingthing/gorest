@@ -86,6 +86,7 @@ func (tx RStoreTx) Insert(r resource.Resource) (resource.Resource, error) {
 		return nil, err
 	}
 
+	logSql(sql, args)
 	_, err = tx.Tx.Exec(context.TODO(), sql, args...)
 	if err != nil {
 		return nil, err
@@ -156,6 +157,7 @@ func (tx RStoreTx) Fill(conds map[string]interface{}, out interface{}) error {
 }
 
 func (tx RStoreTx) getWithSql(sql string, args []interface{}, out interface{}) error {
+	logSql(sql, args)
 	rows, err := tx.Tx.Query(context.TODO(), sql, args...)
 	if err != nil {
 		return err
@@ -259,6 +261,7 @@ func (tx RStoreTx) FillEx(out interface{}, sql string, params ...interface{}) er
 }
 
 func (tx RStoreTx) Exec(sql string, params ...interface{}) (int64, error) {
+	logSql(sql, params...)
 	result, err := tx.Tx.Exec(context.TODO(), sql, params...)
 	if err != nil {
 		return 0, err

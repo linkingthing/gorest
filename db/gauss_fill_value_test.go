@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const FillValueConnStr string = "user=lx password=Linking@201907^%$# host=192.168.54.137 port=25432 database=lx sslmode=disable pool_max_conns=10"
-
-type FillValueResource struct {
+type GaussFillValue struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string     `json:"name" db:"nk"`
 	Brief                 string     `json:"brief" db:"suk"`
@@ -23,18 +21,17 @@ type FillValueResource struct {
 	Friends               []string   `json:"friends" db:"snk"`
 }
 
-func TestFillValue(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
+func TestGaussFillValue(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&GaussFillValue{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)
-	SetDebug(true)
 
-	var preData []*FillValueResource
+	var preData []*GaussFillValue
 	address, err := netip.ParseAddr("10.0.0.1")
 	assert.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		p := &FillValueResource{
+		p := &GaussFillValue{
 			Name:      "name_" + strconv.Itoa(i),
 			ParentId:  "parent_" + strconv.Itoa(i),
 			Age:       i,
@@ -48,7 +45,7 @@ func TestFillValue(t *testing.T) {
 		address = address.Next()
 	}
 
-	var result []*FillValueResource
+	var result []*GaussFillValue
 	var datas = []struct {
 		name        string
 		f           func(Transaction) error
@@ -192,7 +189,7 @@ func TestFillValue(t *testing.T) {
 			t.Run(data.name, func(t *testing.T) {
 				assert.NoError(t, data.f(tx))
 				assert.Equal(t, data.expectCount, len(result))
-				result = make([]*FillValueResource, 0)
+				result = make([]*GaussFillValue, 0)
 			})
 		}
 
@@ -200,17 +197,17 @@ func TestFillValue(t *testing.T) {
 	}))
 }
 
-func TestFillValueCount(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
+func TestGaussFillValueCount(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&GaussFillValue{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)
 
-	var preData []*FillValueResource
+	var preData []*GaussFillValue
 	address, err := netip.ParseAddr("10.0.0.1")
 	assert.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		p := &FillValueResource{
+		p := &GaussFillValue{
 			Name:      "name_" + strconv.Itoa(i),
 			ParentId:  "parent_" + strconv.Itoa(i),
 			Age:       i,
@@ -224,7 +221,7 @@ func TestFillValueCount(t *testing.T) {
 		address = address.Next()
 	}
 
-	IndexResourceDbType := ResourceDBType(&FillValueResource{})
+	IndexResourceDbType := ResourceDBType(&GaussFillValue{})
 	var datas = []struct {
 		name        string
 		f           func(Transaction) (int64, error)
@@ -268,17 +265,17 @@ func TestFillValueCount(t *testing.T) {
 	}))
 }
 
-func TestFillValueUpdate(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
+func TestGaussFillValueUpdate(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&GaussFillValue{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)
 
-	var preData []*FillValueResource
+	var preData []*GaussFillValue
 	address, err := netip.ParseAddr("10.0.0.1")
 	assert.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		p := &FillValueResource{
+		p := &GaussFillValue{
 			Name:      "name_" + strconv.Itoa(i),
 			ParentId:  "parent_" + strconv.Itoa(i),
 			Age:       i,
@@ -292,7 +289,7 @@ func TestFillValueUpdate(t *testing.T) {
 		address = address.Next()
 	}
 
-	IndexResourceDbType := ResourceDBType(&FillValueResource{})
+	IndexResourceDbType := ResourceDBType(&GaussFillValue{})
 	var datas = []struct {
 		name       string
 		updateFunc func(Transaction) (int64, error)
@@ -333,17 +330,17 @@ func TestFillValueUpdate(t *testing.T) {
 	}))
 }
 
-func TestFillValueDelete(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
+func TestGaussFillValueDelete(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&GaussFillValue{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)
 
-	var preData []*FillValueResource
+	var preData []*GaussFillValue
 	address, err := netip.ParseAddr("10.0.0.1")
 	assert.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		p := &FillValueResource{
+		p := &GaussFillValue{
 			Name:      "name_" + strconv.Itoa(i),
 			ParentId:  "parent_" + strconv.Itoa(i),
 			Age:       i,
@@ -357,7 +354,7 @@ func TestFillValueDelete(t *testing.T) {
 		address = address.Next()
 	}
 
-	IndexResourceDbType := ResourceDBType(&FillValueResource{})
+	IndexResourceDbType := ResourceDBType(&GaussFillValue{})
 	var datas = []struct {
 		name        string
 		updateFunc  func(Transaction) (int64, error)

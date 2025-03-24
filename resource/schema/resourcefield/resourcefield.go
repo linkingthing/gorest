@@ -29,7 +29,7 @@ func newResourceField(field Field) *resourceField {
 	}
 }
 
-//validate the resource go struct
+// validate the resource go struct
 func (f *resourceField) Validate(value interface{}, raw map[string]interface{}) error {
 	return f.field.Validate(value, raw)
 }

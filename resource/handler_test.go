@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	err "github.com/linkingthing/gorest/error"
 	ut "github.com/linkingthing/cement/unittest"
+	err "github.com/linkingthing/gorest/error"
 )
 
 type dumbHandlerTwo struct{}
