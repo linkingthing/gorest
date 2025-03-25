@@ -525,6 +525,7 @@ func (tx GaussStoreTx) Update(typ ResourceType, nv map[string]interface{}, cond 
 }
 
 func (tx GaussStoreTx) Exec(sql string, params ...interface{}) (int64, error) {
+	params = tx.filterQueryParams(params...)
 	logSql(sql, params...)
 	result, err := tx.Tx.ExecContext(context.TODO(), sql, params...)
 	if err != nil {
