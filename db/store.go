@@ -11,6 +11,9 @@ type ResourceStore interface {
 	Clean()
 	Close()
 	Begin() (Transaction, error)
+	SetSchema(string)
+	GetSchema() string
+	DropSchemas(dropSchemas ...string) error
 }
 
 type Transaction interface {
@@ -52,12 +55,12 @@ const (
 	DriverMysql      Driver = "mysql"
 )
 
-func NewRStore(connStr string, meta *ResourceMeta, driver Driver) (ResourceStore, error) {
+func NewRStore(connStr string, meta *ResourceMeta, driver Driver, opts ...Option) (ResourceStore, error) {
 	if driver == DriverOpenGauss {
-		return NewGaussStore(connStr, meta)
+		return NewGaussStore(connStr, meta, opts...)
 	}
 
-	return NewPGStore(connStr, meta)
+	return NewPGStore(connStr, meta, opts...)
 }
 
 func WithTx(store ResourceStore, f func(Transaction) error) error {

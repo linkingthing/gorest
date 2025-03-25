@@ -10,7 +10,7 @@ type recovery struct {
 	PgIsInRecovery bool
 }
 
-func DBIsRecoveryMode(pool *pgxpool.Pool) (bool, error) {
+func IsDBRecoveryMode(pool *pgxpool.Pool) (bool, error) {
 	rows, err := pool.Query(context.TODO(), "select pg_is_in_recovery()")
 	if err != nil {
 		return false, err

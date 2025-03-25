@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const ConnStr string = "user=lx password=lx host=127.0.0.1 port=5432 database=lx sslmode=disable pool_max_conns=10"
+const ConnStr string = "user=lx password=Linking@201907^%$# host=10.0.0.67 port=35432 database=lx sslmode=disable pool_max_conns=10"
 
 type Child struct {
 	resource.ResourceBase
@@ -98,7 +98,7 @@ func initMotherChild(store ResourceStore) {
 	tx.Commit()
 }
 
-func TestCURD(t *testing.T) {
+func TestPGCURD(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -165,7 +165,7 @@ func TestCURD(t *testing.T) {
 	store.Close()
 }
 
-func TestCURDEx(t *testing.T) {
+func TestPGCURDEx(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -199,7 +199,7 @@ func TestCURDEx(t *testing.T) {
 	store.Close()
 }
 
-func TestMultiToMultiRelationship(t *testing.T) {
+func TestPGMultiToMultiRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}, &Child{}, &MotherChild{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -247,7 +247,7 @@ type Zone struct {
 	View string `db:"ownby"`
 }
 
-func TestOneToManyRelationship(t *testing.T) {
+func TestPGOneToManyRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&View{}, &Zone{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -303,7 +303,7 @@ func TestOneToManyRelationship(t *testing.T) {
 	store.Close()
 }
 
-func TestGetWithLimitAndOffset(t *testing.T) {
+func TestPGGetWithLimitAndOffset(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -337,7 +337,7 @@ type Student struct {
 	Classroom string `db:"-"`
 }
 
-func TestIgnField(t *testing.T) {
+func TestPGIgnField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -370,7 +370,7 @@ type Rdata struct {
 	Addrs []net.IP
 }
 
-func TestUniqueField(t *testing.T) {
+func TestPGUniqueField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Rdata{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -430,7 +430,7 @@ type BigNum struct {
 	F32Array []float32
 }
 
-func TestIntLimit(t *testing.T) {
+func TestPGIntLimit(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&BigNum{}})
 	ut.Assert(t, err == nil, "")
 	store, err := NewPGStore(ConnStr, meta)
@@ -516,11 +516,13 @@ type People struct {
 	Classroom string `db:"-"`
 }
 
-func TestNotNullTag(t *testing.T) {
+func TestPGNotNullTag(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&People{}})
 	ut.Assert(t, err == nil, "")
+
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		t.Log(createTableSql(descriptor))
+		t.Log(r.createTableSql(descriptor))
 	}
 }
 
@@ -541,15 +543,16 @@ type Cat struct {
 	Address string `json:"address" db:"uk"`
 }
 
-func TestEmbedResource(t *testing.T) {
+func TestPGEmbedResource(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Cat{}})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		t.Log(createTableSql(descriptor))
+		t.Log(r.createTableSql(descriptor))
 	}
 }
 
@@ -576,20 +579,22 @@ func (idx *IndexResource) GenCopyValues() []any {
 		idx.ParentId,
 		idx.Address,
 		idx.IpAddress,
+		idx.Prefix,
 		idx.Street,
 		idx.Friends,
 	}
 }
 
-func TestIndex(t *testing.T) {
+func TestPGIndex(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		table, indexes := createTableSql(descriptor)
+		table, indexes := r.createTableSql(descriptor)
 		t.Log(table)
 		for _, index := range indexes {
 			t.Log(index)
@@ -597,7 +602,7 @@ func TestIndex(t *testing.T) {
 	}
 }
 
-func TestCopyFrom(t *testing.T) {
+func TestPGCopyFrom(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	assert.NoError(t, err)
 	store, err := NewPGStore(ConnStr, meta)
@@ -611,8 +616,9 @@ func TestCopyFrom(t *testing.T) {
 			Age:       i,
 			ParentId:  strconv.Itoa(i),
 			Address:   "address:" + strconv.Itoa(i),
-			Street:    "",
+			Prefix:    netip.MustParsePrefix("10.0.0.0/24"),
 			IpAddress: netip.MustParseAddr("192.168.1.1"),
+			Street:    "",
 			Friends:   []string{"joker", "json"},
 		}
 

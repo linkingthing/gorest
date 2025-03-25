@@ -23,8 +23,9 @@ import (
 )
 
 type GaussStore struct {
-	conn *sql.DB
-	meta *ResourceMeta
+	conn   *sql.DB
+	schema string
+	meta   *ResourceMeta
 }
 
 var showLog bool
@@ -39,35 +40,41 @@ func logSql(query string, args ...any) {
 	}
 }
 
-func NewGaussStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
+func NewGaussStore(connStr string, meta *ResourceMeta, opts ...Option) (ResourceStore, error) {
 	db, err := sql.Open("opengauss", parseGaussConnDsn(connStr))
 	if err != nil {
 		return nil, err
 	}
-	g := &GaussStore{meta: meta, conn: db}
+	g := &GaussStore{meta: meta, conn: db, schema: DefaultSchemaName}
 
-	if recovery, err := g.DBIsRecoveryMode(); err != nil {
+	if isRecovery, err := g.DBIsRecoveryMode(); err != nil {
 		g.Close()
 		return nil, err
-	} else if recovery == false {
-		if err := g.InitSchema(); err != nil {
+	} else if isRecovery {
+		return g, nil
+	}
+
+	for _, opt := range opts {
+		opt(g)
+	}
+
+	if err := g.InitSchema(); err != nil {
+		g.Close()
+		return nil, err
+	}
+
+	for _, descriptor := range meta.GetDescriptors() {
+		cTable, cIndexes := g.createTableSql(descriptor)
+		if _, err := g.conn.Exec(cTable); err != nil {
 			g.Close()
 			return nil, err
 		}
 
-		for _, descriptor := range meta.GetDescriptors() {
-			cTable, cIndexes := g.createTableSql(descriptor)
-			if _, err := g.conn.Exec(cTable); err != nil {
-				g.Close()
+		for _, index := range cIndexes {
+			_, err := g.conn.Exec(index)
+			if err != nil {
+				g.conn.Close()
 				return nil, err
-			}
-
-			for _, index := range cIndexes {
-				_, err := g.conn.Exec(index)
-				if err != nil {
-					g.conn.Close()
-					return nil, err
-				}
 			}
 		}
 	}
@@ -108,22 +115,39 @@ func (g *GaussStore) DBIsRecoveryMode() (bool, error) {
 
 func (g *GaussStore) InitSchema() error {
 	if c, err := g.conn.Query(
-		"SELECT schema_name FROM information_schema.schemata where schema_name=$1;", SchemaName); err != nil {
+		"SELECT schema_name FROM information_schema.schemata where schema_name=$1;", g.GetSchema()); err != nil {
 		return err
 	} else if rows, _ := c.Columns(); len(rows) == 0 {
-		_, err := g.conn.Exec(fmt.Sprintf("create schema %s", SchemaName))
+		_, err := g.conn.Exec(fmt.Sprintf("create schema %s", g.GetSchema()))
 		return err
 	}
 
 	return nil
 }
 
+func (g *GaussStore) SetSchema(s string) {
+	g.schema = s
+}
+
+func (g *GaussStore) GetSchema() string {
+	return g.schema
+}
+
+func (g *GaussStore) DropSchemas(dropSchemas ...string) error {
+	for _, schemaName := range dropSchemas {
+		if _, err := g.conn.ExecContext(context.TODO(), fmt.Sprintf(dropSchemaSql, schemaName)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []string) {
 	var buf bytes.Buffer
 	buf.WriteString("create table if not exists ")
-	buf.WriteString(resourceTableName(descriptor.Typ))
+	buf.WriteString(getTableName(g.schema, descriptor.Typ))
 	buf.WriteString(" (")
-	tableName := resourceTableNameWithoutSchema(descriptor.Typ)
+	tableName := getTableNameWithoutSchema(descriptor.Typ)
 
 	var indexes []string
 	var ginIndexes []string
@@ -163,7 +187,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 	for _, owner := range descriptor.Owners {
 		buf.WriteString(string(owner))
 		buf.WriteString(" text not null references ")
-		buf.WriteString(resourceTableName(owner))
+		buf.WriteString(getTableName(g.schema, owner))
 		buf.WriteString(" (id) on delete cascade")
 		buf.WriteString(",")
 	}
@@ -171,7 +195,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 	for _, refer := range descriptor.Refers {
 		buf.WriteString(string(refer))
 		buf.WriteString(" text not null references ")
-		buf.WriteString(resourceTableName(refer))
+		buf.WriteString(getTableName(g.schema, refer))
 		buf.WriteString(" (id) on delete restrict")
 		buf.WriteString(",")
 	}
@@ -258,7 +282,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 func (g *GaussStore) Clean() {
 	rs := g.meta.Resources()
 	for i := len(rs); i > 0; i-- {
-		tableName := resourceTableName(rs[i-1])
+		tableName := getTableName(g.schema, rs[i-1])
 		if _, err := g.conn.Exec("DROP TABLE IF EXISTS " + tableName + " CASCADE"); err != nil {
 			fmt.Printf("failed to drop table %s, err: %v\n", tableName, err)
 		}
@@ -274,12 +298,12 @@ func (g *GaussStore) Begin() (Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	return GaussStoreTx{Tx: tx, meta: g.meta}, nil
+	return GaussStoreTx{Tx: tx, BaseTx: NewBaseTx(g.meta, g.schema)}, nil
 }
 
 type GaussStoreTx struct {
 	*sql.Tx
-	meta *ResourceMeta
+	*BaseTx
 }
 
 func (tx GaussStoreTx) Commit() error {
@@ -337,7 +361,7 @@ func (tx GaussStoreTx) GetOwned(owner ResourceType, ownerID string, owned Resour
 	}
 
 	sp := reflector.NewSlicePointer(reflect.PointerTo(goTyp))
-	query, args, err := joinSelectSqlAndArgs(tx.meta, owner, owned, ownerID)
+	query, args, err := tx.joinSelectSqlAndArgs(owner, owned, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +377,7 @@ func (tx GaussStoreTx) Fill(cond map[string]interface{}, out interface{}) error 
 		return err
 	}
 
-	query, args, err := selectSqlAndArgs(tx.meta, ResourceDBType(r.(resource.Resource)), cond)
+	query, args, err := tx.selectSqlAndArgs(ResourceDBType(r.(resource.Resource)), cond)
 	if err != nil {
 		return err
 	}
@@ -370,7 +394,7 @@ func (tx GaussStoreTx) FillOwned(owner ResourceType, ownerID string, out interfa
 		return err
 	}
 
-	query, args, err := joinSelectSqlAndArgs(tx.meta, owner, ResourceDBType(r.(resource.Resource)), ownerID)
+	query, args, err := tx.joinSelectSqlAndArgs(owner, ResourceDBType(r.(resource.Resource)), ownerID)
 	if err != nil {
 		return err
 	}
@@ -418,7 +442,7 @@ func (tx GaussStoreTx) filterQueryParams(params ...any) []any {
 }
 
 func (tx GaussStoreTx) Exists(typ ResourceType, cond map[string]interface{}) (bool, error) {
-	query, params, err := existsSqlAndArgs(tx.meta, typ, cond)
+	query, params, err := tx.existsSqlAndArgs(typ, cond)
 	if err != nil {
 		return false, err
 	}
@@ -443,7 +467,7 @@ func (tx GaussStoreTx) existsWithSql(sql string, params ...interface{}) (bool, e
 }
 
 func (tx GaussStoreTx) Count(typ ResourceType, cond map[string]interface{}) (int64, error) {
-	query, params, err := countSqlAndArgs(tx.meta, typ, cond)
+	query, params, err := tx.countSqlAndArgs(typ, cond)
 	if err != nil {
 		return 0, err
 	}
@@ -476,7 +500,7 @@ func (tx GaussStoreTx) countWithSql(sql string, params ...interface{}) (int64, e
 }
 
 func (tx GaussStoreTx) Delete(typ ResourceType, cond map[string]interface{}) (int64, error) {
-	query, args, err := deleteSqlAndArgs(tx.meta, typ, cond)
+	query, args, err := tx.deleteSqlAndArgs(typ, cond)
 	if err != nil {
 		return 0, err
 	}
@@ -485,7 +509,7 @@ func (tx GaussStoreTx) Delete(typ ResourceType, cond map[string]interface{}) (in
 }
 
 func (tx GaussStoreTx) Update(typ ResourceType, nv map[string]interface{}, cond map[string]interface{}) (int64, error) {
-	query, args, err := updateSqlAndArgs(tx.meta, typ, nv, cond)
+	query, args, err := tx.updateSqlAndArgs(typ, nv, cond)
 	if err != nil {
 		return 0, err
 	}
@@ -510,7 +534,7 @@ func (tx GaussStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][
 	if len(values) == 0 {
 		return 0, nil
 	}
-	stmt, err := tx.Prepare(pq.CopyInSchema(SchemaName, resourceTableNameWithoutSchema(descriptor.Typ), columns...))
+	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema, getTableNameWithoutSchema(descriptor.Typ), columns...))
 	if err != nil {
 		return 0, err
 	}
@@ -541,7 +565,7 @@ func (tx GaussStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64
 		return 0, nil
 	}
 
-	stmt, err := tx.Prepare(pq.CopyInSchema(SchemaName, resourceTableNameWithoutSchema(descriptor.Typ), columns...))
+	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema, getTableNameWithoutSchema(descriptor.Typ), columns...))
 	if err != nil {
 		return 0, err
 	}
@@ -565,7 +589,7 @@ func (tx GaussStoreTx) insertSqlArgsAndID(meta *ResourceMeta, r resource.Resourc
 		return "", nil, fmt.Errorf("get %v descriptor failed %v", typ, err.Error())
 	}
 
-	tableName := resourceTableName(descriptor.Typ)
+	tableName := getTableName(tx.schema, descriptor.Typ)
 	fieldCount := len(descriptor.Fields) + len(descriptor.Owners) + len(descriptor.Refers)
 	markers := make([]string, 0, fieldCount)
 	for i := 1; i <= fieldCount; i++ {
@@ -610,8 +634,11 @@ func (tx GaussStoreTx) insertSqlArgsAndID(meta *ResourceMeta, r resource.Resourc
 		columns = append(columns, string(refer))
 	}
 
-	sql := strings.Join([]string{"insert into", tableName, "(" + strings.Join(columns, ","), ")", "values(", strings.Join(markers, ","), ")"}, " ")
-	return sql, args, nil
+	return strings.Join(
+		[]string{"insert into",
+			tableName,
+			"(" + strings.Join(columns, ","), ")",
+			"values(", strings.Join(markers, ","), ")"}, " "), args, nil
 }
 
 func (tx GaussStoreTx) filterCopyValues(values ...any) []any {

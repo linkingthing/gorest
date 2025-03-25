@@ -68,7 +68,7 @@ func setup(conStr string, meta *ResourceMeta) (ResourceStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create store failed: %s", err.Error())
 	}
-	SetDebug(true)
+	SetDebug(false)
 	return store, nil
 }
 
@@ -81,7 +81,7 @@ func setupGaussResource(conStr string) (ResourceStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create store failed: %s", err.Error())
 	}
-	SetDebug(true)
+	SetDebug(false)
 	return store, nil
 }
 
