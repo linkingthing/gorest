@@ -22,7 +22,7 @@ type RStoreTx struct {
 	meta *ResourceMeta
 }
 
-func NewRStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
+func NewPGStore(connStr string, meta *ResourceMeta) (ResourceStore, error) {
 	pool, err := pgxpool.New(context.TODO(), connStr)
 	if err != nil {
 		return nil, err

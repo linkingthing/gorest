@@ -44,11 +44,26 @@ type Transaction interface {
 	Rollback() error
 }
 
+type Driver string
+
+const (
+	DriverPostgresql Driver = "postgresql"
+	DriverOpenGauss  Driver = "openGauss"
+	DriverMysql      Driver = "mysql"
+)
+
+func NewRStore(connStr string, meta *ResourceMeta, driver Driver) (ResourceStore, error) {
+	if driver == DriverOpenGauss {
+		return NewGaussStore(connStr, meta)
+	}
+
+	return NewPGStore(connStr, meta)
+}
+
 func WithTx(store ResourceStore, f func(Transaction) error) error {
 	tx, err := store.Begin()
 	if err == nil {
-		err = f(tx)
-		if err == nil {
+		if err = f(tx); err == nil {
 			tx.Commit()
 		} else {
 			tx.Rollback()

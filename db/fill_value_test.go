@@ -26,7 +26,7 @@ type FillValueResource struct {
 func TestFillValue(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := NewPGStore(FillValueConnStr, meta)
 	assert.NoError(t, err)
 	SetDebug(true)
 
@@ -203,7 +203,7 @@ func TestFillValue(t *testing.T) {
 func TestFillValueCount(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := NewPGStore(FillValueConnStr, meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource
@@ -271,7 +271,7 @@ func TestFillValueCount(t *testing.T) {
 func TestFillValueUpdate(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := NewPGStore(FillValueConnStr, meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource
@@ -336,7 +336,7 @@ func TestFillValueUpdate(t *testing.T) {
 func TestFillValueDelete(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(FillValueConnStr, meta)
+	store, err := NewPGStore(FillValueConnStr, meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource

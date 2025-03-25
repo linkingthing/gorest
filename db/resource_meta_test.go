@@ -46,7 +46,7 @@ func TestNewResourceMeta(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
 
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	tx, _ := store.Begin()

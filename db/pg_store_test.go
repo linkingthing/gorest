@@ -101,7 +101,7 @@ func initMotherChild(store ResourceStore) {
 func TestCURD(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	initChild(store)
@@ -168,7 +168,7 @@ func TestCURD(t *testing.T) {
 func TestCURDEx(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -202,7 +202,7 @@ func TestCURDEx(t *testing.T) {
 func TestMultiToMultiRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}, &Child{}, &MotherChild{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -250,7 +250,7 @@ type Zone struct {
 func TestOneToManyRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&View{}, &Zone{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -306,7 +306,7 @@ func TestOneToManyRelationship(t *testing.T) {
 func TestGetWithLimitAndOffset(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -340,7 +340,7 @@ type Student struct {
 func TestIgnField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -373,7 +373,7 @@ type Rdata struct {
 func TestUniqueField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Rdata{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -433,7 +433,7 @@ type BigNum struct {
 func TestIntLimit(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&BigNum{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -600,7 +600,7 @@ func TestIndex(t *testing.T) {
 func TestCopyFrom(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	assert.NoError(t, err)
 
 	var copyValues [][]any
