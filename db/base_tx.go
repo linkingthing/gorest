@@ -41,6 +41,9 @@ func NewBaseTx(meta *ResourceMeta, schema string) *BaseTx {
 }
 
 func getTableName(schema string, typ ResourceType) string {
+	if schema != DefaultSchemaName {
+		return schema + "." + string(typ)
+	}
 	return schema + "." + DefaultTablePrefix + string(typ)
 }
 
