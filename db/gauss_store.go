@@ -454,6 +454,8 @@ func (tx GaussStoreTx) Exists(typ ResourceType, cond map[string]interface{}) (bo
 }
 
 func (tx GaussStoreTx) existsWithSql(sql string, params ...interface{}) (bool, error) {
+	params = tx.filterQueryParams(params...)
+	logSql(sql, params...)
 	rows, err := tx.Tx.QueryContext(context.TODO(), sql, params...)
 	if err != nil {
 		return false, err
@@ -486,6 +488,8 @@ func (tx GaussStoreTx) CountEx(typ ResourceType, sql string, params ...interface
 }
 
 func (tx GaussStoreTx) countWithSql(sql string, params ...interface{}) (int64, error) {
+	params = tx.filterQueryParams(params...)
+	logSql(sql, params...)
 	rows, err := tx.Tx.QueryContext(context.TODO(), sql, params...)
 	if err != nil {
 		return 0, err
