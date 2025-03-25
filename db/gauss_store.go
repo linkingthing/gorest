@@ -60,21 +60,20 @@ func NewGaussStore(connStr string, meta *ResourceMeta, opts ...Option) (Resource
 
 	if err := g.InitSchema(); err != nil {
 		g.Close()
-		return nil, err
+		return nil, fmt.Errorf("init schema failed: %v", err)
 	}
 
 	for _, descriptor := range meta.GetDescriptors() {
 		cTable, cIndexes := g.createTableSql(descriptor)
 		if _, err := g.conn.Exec(cTable); err != nil {
 			g.Close()
-			return nil, err
+			return nil, fmt.Errorf("create table failed: %v", err)
 		}
 
 		for _, index := range cIndexes {
-			_, err := g.conn.Exec(index)
-			if err != nil {
+			if _, err := g.conn.Exec(index); err != nil {
 				g.conn.Close()
-				return nil, err
+				return nil, fmt.Errorf("create index failed: %v", err)
 			}
 		}
 	}
