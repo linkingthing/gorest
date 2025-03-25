@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -113,14 +114,17 @@ func (g *GaussStore) DBIsRecoveryMode() (bool, error) {
 }
 
 func (g *GaussStore) InitSchema() error {
-	if c, err := g.conn.Query(
-		"SELECT schema_name FROM information_schema.schemata where schema_name=$1;", g.GetSchema()); err != nil {
-		return err
-	} else if rows, _ := c.Columns(); len(rows) == 0 {
-		_, err := g.conn.Exec(fmt.Sprintf("create schema %s", g.GetSchema()))
+	row := g.conn.QueryRow(
+		"SELECT schema_name FROM information_schema.schemata where schema_name=$1;", g.GetSchema())
+
+	var SchemaName string
+	if err := row.Scan(&SchemaName); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			_, err := g.conn.Exec(fmt.Sprintf("create schema %s", g.GetSchema()))
+			return err
+		}
 		return err
 	}
-
 	return nil
 }
 
@@ -228,7 +232,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 		idxBuf.WriteString(" if not exists ")
 		idxBuf.WriteString(IndexPrefix + tableName + "_" + strings.Join(descriptor.Idxes, "_"))
 		idxBuf.WriteString(" on ")
-		idxBuf.WriteString(tableName)
+		idxBuf.WriteString(getTableName(g.schema, descriptor.Typ))
 		idxBuf.WriteString(" (")
 		for i, idx := range descriptor.Idxes {
 			idxBuf.WriteString(idx)
@@ -247,7 +251,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 			idxBuf.WriteString(" if not exists ")
 			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
-			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(getTableName(g.schema, descriptor.Typ))
 			idxBuf.WriteString(" (")
 			idxBuf.WriteString(index)
 			idxBuf.WriteString(")")
@@ -263,7 +267,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 			idxBuf.WriteString(" if not exists ")
 			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
-			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(getTableName(g.schema, descriptor.Typ))
 			//GaussDB not support gin
 			//idxBuf.WriteString(" using gin")
 			idxBuf.WriteString(" (")

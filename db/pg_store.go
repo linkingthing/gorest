@@ -41,22 +41,20 @@ func NewPGStore(connStr string, meta *ResourceMeta, opts ...Option) (ResourceSto
 
 	if err := r.InitSchema(); err != nil {
 		pool.Close()
-		return nil, err
+		return nil, fmt.Errorf("init schema failed: %v", err)
 	}
 
 	for _, descriptor := range meta.GetDescriptors() {
 		cTable, cIndexes := r.createTableSql(descriptor)
-		_, err := pool.Exec(context.TODO(), cTable)
-		if err != nil {
+		if _, err := pool.Exec(context.TODO(), cTable); err != nil {
 			pool.Close()
-			return nil, err
+			return nil, fmt.Errorf("create table %s error: %v", cTable, err)
 		}
 
 		for _, index := range cIndexes {
-			_, err := pool.Exec(context.TODO(), index)
-			if err != nil {
+			if _, err := pool.Exec(context.TODO(), index); err != nil {
 				pool.Close()
-				return nil, err
+				return nil, fmt.Errorf("create index failed:%s", err.Error())
 			}
 		}
 	}
@@ -151,7 +149,7 @@ func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []
 		idxBuf.WriteString(" if not exists ")
 		idxBuf.WriteString(IndexPrefix + tableName + "_" + strings.Join(descriptor.Idxes, "_"))
 		idxBuf.WriteString(" on ")
-		idxBuf.WriteString(tableName)
+		idxBuf.WriteString(getTableName(store.schema, descriptor.Typ))
 		idxBuf.WriteString(" (")
 		for i, idx := range descriptor.Idxes {
 			idxBuf.WriteString(idx)
@@ -170,7 +168,7 @@ func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []
 			idxBuf.WriteString(" if not exists ")
 			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
-			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(getTableName(store.schema, descriptor.Typ))
 			idxBuf.WriteString(" (")
 			idxBuf.WriteString(index)
 			idxBuf.WriteString(")")
@@ -186,7 +184,7 @@ func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []
 			idxBuf.WriteString(" if not exists ")
 			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
-			idxBuf.WriteString(tableName)
+			idxBuf.WriteString(getTableName(store.schema, descriptor.Typ))
 			idxBuf.WriteString(" using gin")
 			idxBuf.WriteString(" (")
 			idxBuf.WriteString(index)

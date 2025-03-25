@@ -85,6 +85,14 @@ func setupGaussResource(conStr string) (ResourceStore, error) {
 	return store, nil
 }
 
+func TestGaussInitSchema(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&GaussResource{}})
+	assert.NoError(t, err)
+	store, err := NewGaussStore(GaussConnStr, meta, WithSchema("gr"))
+	assert.NoError(t, err)
+	t.Log(store)
+}
+
 func TestInsert(t *testing.T) {
 	store, err := setupGaussResource(GaussConnStr)
 	assert.NoError(t, err)
