@@ -2,18 +2,18 @@ package db
 
 import (
 	"fmt"
-	"github.com/linkingthing/gorest/resource"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"net/netip"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/linkingthing/gorest/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
-	GaussConnStr string = "user=lx password=Linking@201907^%$# host=10.0.0.67 port=25432 database=lx sslmode=disable  pool_max_conns=10"
-	//GaussConnStr string = "user=lx password=Linking@201907^%$# host=1.95.184.177 port=25432 database=lx sslmode=disable  pool_max_conns=10"
+	GaussConnStr string = "user=test password=test host=127.0.0.1 port=5432 database=test sslmode=disable  pool_max_conns=10"
 )
 
 type GaussResource struct {
@@ -56,7 +56,7 @@ func (idx *GaussResource) GenCopyValues() []any {
 var TableGaussResource = ResourceDBType(&GaussResource{})
 
 func TestConnect(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&GaussResource{}})
+	meta, err := NewResourceMeta([]resource.Resource{&User{}})
 	assert.NoError(t, err)
 	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)

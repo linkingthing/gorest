@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const ConnStr string = "user=lx password=Linking@201907^%$# host=10.0.0.67 port=35432 database=lx sslmode=disable pool_max_conns=10"
+const ConnStr string = "user=test password=test host=127.0.0.1 port=5432 database=test sslmode=disable pool_max_conns=10"
 
 type Child struct {
 	resource.ResourceBase
@@ -96,6 +96,24 @@ func initMotherChild(store ResourceStore) {
 		Child:  "c1",
 	})
 	tx.Commit()
+}
+
+type User struct {
+	resource.ResourceBase `json:",inline"`
+	ID                    int
+	Name                  string
+	Age                   int
+	IPs                   []net.IP
+	Subnets               []netip.Prefix
+	Numbers               []int
+}
+
+func TestPGConnect(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&User{}})
+	ut.Assert(t, err == nil, "")
+	store, err := NewPGStore(ConnStr, meta)
+	ut.Assert(t, err == nil, "")
+	t.Log(store)
 }
 
 func TestPGCURD(t *testing.T) {
