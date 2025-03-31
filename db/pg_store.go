@@ -67,7 +67,7 @@ func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []
 	buf.WriteString("create table if not exists ")
 	buf.WriteString(getTableName(store.schema, descriptor.Typ))
 	buf.WriteString(" (")
-	tableName := getTableNameWithoutSchema(descriptor.Typ)
+	tableName := getTableNameWithoutSchema(store.schema, descriptor.Typ)
 
 	var indexes []string
 	var ginIndexes []string
@@ -445,7 +445,7 @@ func (tx PGStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]in
 	}
 
 	c, err := tx.Tx.CopyFrom(context.Background(),
-		pgx.Identifier{tx.schema, getTableNameWithoutSchema(descriptor.Typ)},
+		pgx.Identifier{tx.schema, getTableNameWithoutSchema(tx.schema, descriptor.Typ)},
 		columns,
 		pgx.CopyFromRows(values))
 	return c, err
@@ -466,7 +466,7 @@ func (tx PGStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64, e
 	}
 
 	c, err := tx.Tx.CopyFrom(context.Background(),
-		pgx.Identifier{tx.schema, getTableNameWithoutSchema(descriptor.Typ)},
+		pgx.Identifier{tx.schema, getTableNameWithoutSchema(tx.schema, descriptor.Typ)},
 		columns,
 		pgx.CopyFromRows(values))
 	return c, err

@@ -150,7 +150,7 @@ func (g *GaussStore) createTableSql(descriptor *ResourceDescriptor) (string, []s
 	buf.WriteString("create table if not exists ")
 	buf.WriteString(getTableName(g.schema, descriptor.Typ))
 	buf.WriteString(" (")
-	tableName := getTableNameWithoutSchema(descriptor.Typ)
+	tableName := getTableNameWithoutSchema(g.schema, descriptor.Typ)
 
 	var indexes []string
 	var ginIndexes []string
@@ -542,7 +542,8 @@ func (tx GaussStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][
 	if len(values) == 0 {
 		return 0, nil
 	}
-	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema, getTableNameWithoutSchema(descriptor.Typ), columns...))
+	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema,
+		getTableNameWithoutSchema(tx.schema, descriptor.Typ), columns...))
 	if err != nil {
 		return 0, err
 	}
@@ -573,7 +574,8 @@ func (tx GaussStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64
 		return 0, nil
 	}
 
-	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema, getTableNameWithoutSchema(descriptor.Typ), columns...))
+	stmt, err := tx.Prepare(pq.CopyInSchema(tx.schema,
+		getTableNameWithoutSchema(tx.schema, descriptor.Typ), columns...))
 	if err != nil {
 		return 0, err
 	}

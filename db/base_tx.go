@@ -47,7 +47,10 @@ func getTableName(schema string, typ ResourceType) string {
 	return schema + "." + DefaultTablePrefix + string(typ)
 }
 
-func getTableNameWithoutSchema(typ ResourceType) string {
+func getTableNameWithoutSchema(schema string, typ ResourceType) string {
+	if schema != DefaultSchemaName {
+		return string(typ)
+	}
 	return DefaultTablePrefix + string(typ)
 }
 
