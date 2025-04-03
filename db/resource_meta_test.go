@@ -46,7 +46,7 @@ func TestNewResourceMeta(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
 
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	tx, _ := store.Begin()
@@ -108,10 +108,11 @@ func TestBatchInsert(t *testing.T) {
 	//	}
 	//}
 
+	baseTx := NewBaseTx(meta, DefaultSchemaName)
 	batch := &pgx.Batch{}
 	for _, r := range students {
 		r.SetCreationTimestamp(time.Now())
-		sql, args, err := insertSqlArgsAndID(meta, r)
+		sql, args, err := baseTx.insertSqlArgsAndID(r)
 		if err != nil {
 			t.Error(err)
 			return
@@ -151,7 +152,7 @@ func TestBatchInsert(t *testing.T) {
 		return
 	}
 	c, err := pool.CopyFrom(context.Background(),
-		pgx.Identifier{SchemaName, resourceTableNameWithoutSchema(descriptor.Typ)},
+		pgx.Identifier{DefaultSchemaName, getTableNameWithoutSchema(descriptor.Typ)},
 		[]string{"id", "create_time", "name", "age", "address"}, pgx.CopyFromRows(copyValues))
 	if err != nil {
 		t.Error(err)

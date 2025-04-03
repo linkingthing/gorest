@@ -11,6 +11,9 @@ type ResourceStore interface {
 	Clean()
 	Close()
 	Begin() (Transaction, error)
+	SetSchema(string)
+	GetSchema() string
+	DropSchemas(dropSchemas ...string) error
 }
 
 type Transaction interface {
@@ -35,18 +38,35 @@ type Transaction interface {
 	CountEx(typ ResourceType, sql string, params ...interface{}) (int64, error)
 	FillEx(out interface{}, sql string, params ...interface{}) error
 	Exec(sql string, params ...interface{}) (int64, error)
-	// CopyFromEx the order of columns should the same with values
+	// CopyFromEx The values should be in the same order as the columns
 	CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error)
+	// CopyFrom The values should be in the same order as the columns
+	CopyFrom(typ ResourceType, values [][]interface{}) (int64, error)
 
 	Commit() error
 	Rollback() error
 }
 
+type Driver string
+
+const (
+	DriverPostgresql Driver = "postgresql"
+	DriverOpenGauss  Driver = "openGauss"
+	DriverMysql      Driver = "mysql"
+)
+
+func NewRStore(connStr string, meta *ResourceMeta, driver Driver, opts ...Option) (ResourceStore, error) {
+	if driver == DriverOpenGauss {
+		return NewGaussStore(connStr, meta, opts...)
+	}
+
+	return NewPGStore(connStr, meta, opts...)
+}
+
 func WithTx(store ResourceStore, f func(Transaction) error) error {
 	tx, err := store.Begin()
 	if err == nil {
-		err = f(tx)
-		if err == nil {
+		if err = f(tx); err == nil {
 			tx.Commit()
 		} else {
 			tx.Rollback()

@@ -68,7 +68,7 @@ func (s *VersionedSchemas) CreateResourceFromRequest(method, path string, body [
 	}
 
 	if len(path) == 0 {
-		return nil, goresterr.NewAPIError(goresterr.InvalidFormat, "no schema name in url")
+		return nil, goresterr.NewAPIError(goresterr.InvalidFormat, goresterr.ErrorMessage{MessageEN: "no schema name in url"})
 	} else {
 		path = path[1:] //get rid of first '/'
 	}
@@ -82,7 +82,8 @@ func (s *VersionedSchemas) CreateResourceFromRequest(method, path string, body [
 
 	segmentCount := len(segments)
 	if segmentCount == 0 {
-		return nil, goresterr.NewAPIError(goresterr.NotFound, "only api version without any resource")
+		return nil, goresterr.NewAPIError(goresterr.NotFound,
+			goresterr.ErrorMessage{MessageEN: "only api version without any resource"})
 	}
 
 	for _, schema := range s.toplevelSchemas {
@@ -92,7 +93,8 @@ func (s *VersionedSchemas) CreateResourceFromRequest(method, path string, body [
 			return r, nil
 		}
 	}
-	return nil, goresterr.NewAPIError(goresterr.NotFound, fmt.Sprintf("no resource with kind %s", segments[0]))
+	return nil, goresterr.NewAPIError(goresterr.NotFound,
+		goresterr.ErrorMessage{MessageEN: fmt.Sprintf("no resource with kind %s", segments[0])})
 }
 
 func (s *VersionedSchemas) addTopleveSchema(schema *Schema) error {

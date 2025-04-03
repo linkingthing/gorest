@@ -70,7 +70,7 @@ func TestFieldBuild(t *testing.T) {
 	}
 }
 
-//for struct without any rest contraint generate nil field
+// for struct without any rest contraint generate nil field
 func TestFieldBuildForNoneRestStruct(t *testing.T) {
 	type IncludeStruct struct {
 		Int8WithRange     int8   `json:"int8WithRange"`

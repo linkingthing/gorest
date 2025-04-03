@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const ConnStr string = "user=lx password=lx host=localhost port=5432 database=lx sslmode=disable pool_max_conns=10"
+const ConnStr string = "user=test password=test host=127.0.0.1 port=5432 database=test sslmode=disable pool_max_conns=10"
 
 type Child struct {
 	resource.ResourceBase
@@ -98,10 +98,28 @@ func initMotherChild(store ResourceStore) {
 	tx.Commit()
 }
 
-func TestCURD(t *testing.T) {
+type User struct {
+	resource.ResourceBase `json:",inline"`
+	ID                    int
+	Name                  string
+	Age                   int
+	IPs                   []net.IP
+	Subnets               []netip.Prefix
+	Numbers               []int
+}
+
+func TestPGConnect(t *testing.T) {
+	meta, err := NewResourceMeta([]resource.Resource{&User{}})
+	ut.Assert(t, err == nil, "")
+	store, err := NewPGStore(ConnStr, meta)
+	ut.Assert(t, err == nil, "")
+	t.Log(store)
+}
+
+func TestPGCURD(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	initChild(store)
@@ -165,10 +183,10 @@ func TestCURD(t *testing.T) {
 	store.Close()
 }
 
-func TestCURDEx(t *testing.T) {
+func TestPGCURDEx(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -199,10 +217,10 @@ func TestCURDEx(t *testing.T) {
 	store.Close()
 }
 
-func TestMultiToMultiRelationship(t *testing.T) {
+func TestPGMultiToMultiRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}, &Child{}, &MotherChild{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -247,10 +265,10 @@ type Zone struct {
 	View string `db:"ownby"`
 }
 
-func TestOneToManyRelationship(t *testing.T) {
+func TestPGOneToManyRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&View{}, &Zone{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -303,10 +321,10 @@ func TestOneToManyRelationship(t *testing.T) {
 	store.Close()
 }
 
-func TestGetWithLimitAndOffset(t *testing.T) {
+func TestPGGetWithLimitAndOffset(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -337,10 +355,10 @@ type Student struct {
 	Classroom string `db:"-"`
 }
 
-func TestIgnField(t *testing.T) {
+func TestPGIgnField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -370,10 +388,10 @@ type Rdata struct {
 	Addrs []net.IP
 }
 
-func TestUniqueField(t *testing.T) {
+func TestPGUniqueField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Rdata{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -430,10 +448,10 @@ type BigNum struct {
 	F32Array []float32
 }
 
-func TestIntLimit(t *testing.T) {
+func TestPGIntLimit(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&BigNum{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -516,11 +534,13 @@ type People struct {
 	Classroom string `db:"-"`
 }
 
-func TestNotNullTag(t *testing.T) {
+func TestPGNotNullTag(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&People{}})
 	ut.Assert(t, err == nil, "")
+
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		t.Log(createTableSql(descriptor))
+		t.Log(r.createTableSql(descriptor))
 	}
 }
 
@@ -541,39 +561,58 @@ type Cat struct {
 	Address string `json:"address" db:"uk"`
 }
 
-func TestEmbedResource(t *testing.T) {
+func TestPGEmbedResource(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Cat{}})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		t.Log(createTableSql(descriptor))
+		t.Log(r.createTableSql(descriptor))
 	}
 }
 
 type IndexResource struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string     `json:"name" db:"nk"`
-	Brief                 string     `json:"brief" db:"suk"`
-	Age                   int        `json:"age" db:"uk"`
-	ParentId              string     `json:"parentId" db:"nk"`
-	Address               string     `json:"address" db:"uk"`
-	IpAddress             netip.Addr `json:"ipAddress"`
-	Street                string     `json:"street" db:"not null"`
-	Friends               []string   `json:"friends" db:"snk"`
+	Name                  string       `json:"name" db:"nk"`
+	Brief                 string       `json:"brief" db:"suk"`
+	Age                   int          `json:"age" db:"uk"`
+	ParentId              string       `json:"parentId" db:"nk"`
+	Address               string       `json:"address" db:"uk"`
+	IpAddress             netip.Addr   `json:"ipAddress"`
+	Prefix                netip.Prefix `json:"prefix"`
+	Street                string       `json:"street" db:"not null"`
+	Friends               []string     `json:"friends" db:"snk"`
 }
 
-func TestIndex(t *testing.T) {
+func (idx *IndexResource) GenCopyValues() []any {
+	return []any{
+		idx.GetID(),
+		time.Now(),
+		idx.Name,
+		idx.Brief,
+		idx.Age,
+		idx.ParentId,
+		idx.Address,
+		idx.IpAddress,
+		idx.Prefix,
+		idx.Street,
+		idx.Friends,
+	}
+}
+
+func TestPGIndex(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	r := PGStore{meta: meta, schema: DefaultSchemaName}
 	for _, descriptor := range meta.GetDescriptors() {
-		table, indexes := createTableSql(descriptor)
+		table, indexes := r.createTableSql(descriptor)
 		t.Log(table)
 		for _, index := range indexes {
 			t.Log(index)
@@ -581,116 +620,32 @@ func TestIndex(t *testing.T) {
 	}
 }
 
-func TestFill(t *testing.T) {
+func TestPGCopyFrom(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	assert.NoError(t, err)
-	store, err := NewRStore(ConnStr, meta)
+	store, err := NewPGStore(ConnStr, meta)
 	assert.NoError(t, err)
 
-	//var preData []*IndexResource
-	//address, err := netip.ParseAddr("10.0.0.1")
-	//assert.NoError(t, err)
-	//for i := 0; i < 10; i++ {
-	//	p := &IndexResource{
-	//		Name:      "name_" + strconv.Itoa(i),
-	//		ParentId:  "parent_" + strconv.Itoa(i),
-	//		Age:       i,
-	//		Street:    "local",
-	//		Brief:     "brief_" + strconv.Itoa(i),
-	//		Address:   "address_" + strconv.Itoa(i),
-	//		IpAddress: address,
-	//		Friends:   []string{"j", strconv.Itoa(i)},
-	//	}
-	//	preData = append(preData, p)
-	//	address = address.Next()
-	//}
-	//assert.NoError(t, WithTx(store, func(tx Transaction) error {
-	//	for _, datum := range preData {
-	//		_, err := tx.Insert(datum)
-	//		assert.NoError(t, err)
-	//	}
-	//	return nil
-	//}))
-
-	var result []*IndexResource
-	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		return tx.Fill(map[string]interface{}{
-			//"name": FillValue{Value: "1", Operator: OperatorLikePrefix},
-			//"name": FillValue{Value: "name_1", Operator: OperatorLikeSuffix},
-			"name": "name_4",
-		}, &result)
-	}))
-
-	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		return tx.Fill(map[string]interface{}{
-			//"address":    FillValue{Value: []string{"address_1"}, Operator: OperatorAny},
-			//"friends":    FillValue{Value: []string{"1"}, Operator: OperatorOverlap},
-			//"ip_address": FillValue{Value: "10.0.0.2", Operator: OperatorSubnetContainEqBy},
-			//"ip_address": FillValue{Value: "10.0.0.2", Operator: OperatorSubnetContainEq},
-			"ip_address": FillValue{Value: "10.0.0.0/24", Operator: OperatorSubnetContainBy},
-		}, &result)
-	}))
-
-	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		return tx.Fill(map[string]interface{}{
-			"name": FillValue{Value: "name_1", Operator: OperatorNe},
-			//"age":  FillValue{Value: 5, Operator: OperatorLt},
-			//"age": FillValue{Value: 5, Operator: OperatorLte},
-			//"age": FillValue{Value: 1, Operator: OperatorGt},
-			"age": FillValue{Value: 1, Operator: OperatorGte},
-		}, &result)
-	}))
-
-	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		return tx.Fill(map[string]interface{}{
-			//"name": FillValue{Value: "1", Operator: OperatorLikePrefix},
-			//"name": FillValue{Value: "name_1", Operator: OperatorLikeSuffix},
-			"name": FillValue{Value: "me", Operator: OperatorLike},
-		}, &result)
-	}))
-
-	for _, r := range result {
-		t.Logf("result:%+v", r)
-	}
-}
-
-func TestUpdate(t *testing.T) {
-	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
-	assert.NoError(t, err)
-	store, err := NewRStore(ConnStr, meta)
-	assert.NoError(t, err)
-
-	var preData []*IndexResource
-	address, err := netip.ParseAddr("10.0.0.1")
-	assert.NoError(t, err)
-	for i := 0; i < 10; i++ {
-		p := &IndexResource{
-			Name:      "name_" + strconv.Itoa(i),
-			ParentId:  "parent_" + strconv.Itoa(i),
+	var copyValues [][]any
+	for i := 0; i < 3; i++ {
+		idx := &IndexResource{
+			Name:      "name-" + strconv.Itoa(i),
+			Brief:     "brief-" + strconv.Itoa(i),
 			Age:       i,
-			Street:    "local",
-			Brief:     "brief_" + strconv.Itoa(i),
-			Address:   "address_" + strconv.Itoa(i),
-			IpAddress: address,
-			Friends:   []string{"j", strconv.Itoa(i)},
+			ParentId:  strconv.Itoa(i),
+			Address:   "address:" + strconv.Itoa(i),
+			Prefix:    netip.MustParsePrefix("10.0.0.0/24"),
+			IpAddress: netip.MustParseAddr("192.168.1.1"),
+			Street:    "",
+			Friends:   []string{"joker", "json"},
 		}
-		preData = append(preData, p)
-		address = address.Next()
+
+		idx.SetID(strconv.Itoa(i))
+		copyValues = append(copyValues, idx.GenCopyValues())
 	}
-	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		for _, datum := range preData {
-			_, err := tx.Insert(datum)
-			assert.NoError(t, err)
-		}
-		return nil
-	}))
 
 	assert.NoError(t, WithTx(store, func(tx Transaction) error {
-		_, err := tx.Update(ResourceDBType(&IndexResource{}),
-			map[string]interface{}{"name": "joker"},
-			map[string]interface{}{
-				"name": FillValue{Value: "name_1", Operator: OperatorNe},
-			})
+		_, err := tx.CopyFrom(ResourceDBType(&IndexResource{}), copyValues)
 		return err
 	}))
 }

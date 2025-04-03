@@ -407,7 +407,7 @@ func (meta *ResourceMeta) Resources() []ResourceType {
 	return meta.resources
 }
 
-//borrow from encoding/json/tags.go
+// borrow from encoding/json/tags.go
 func tagContains(o string, optionName string) bool {
 	if len(o) == 0 {
 		return false

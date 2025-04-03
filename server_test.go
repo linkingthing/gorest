@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	ut "github.com/linkingthing/cement/unittest"
 	goresterr "github.com/linkingthing/gorest/error"
 	"github.com/linkingthing/gorest/resource"
 	"github.com/linkingthing/gorest/resource/schema"
-	ut "github.com/linkingthing/cement/unittest"
 )
 
 var (

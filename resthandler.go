@@ -26,7 +26,7 @@ func restHandler(ctx *resource.Context) *goresterr.APIError {
 	case http.MethodDelete:
 		return handleDelete(ctx)
 	default:
-		return goresterr.NewAPIError(goresterr.NotFound, "no found request handler")
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no found request handler"})
 	}
 }
 
@@ -34,19 +34,20 @@ func handleCreate(ctx *resource.Context) *goresterr.APIError {
 	schema := ctx.Resource.GetSchema()
 	handler := schema.GetHandler().GetCreateHandler()
 	if handler == nil {
-		return goresterr.NewAPIError(goresterr.NotFound, "no handler for create")
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no handler for create"})
 	}
 
 	r, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	ctx.Resource.SetID(r.GetID())
 	r.SetType(ctx.Resource.GetType())
 	httpSchemeAndHost := path.Join(ctx.Request.URL.Scheme, ctx.Request.URL.Host)
 	if err := schema.AddLinksToResource(r, httpSchemeAndHost); err != nil {
-		return goresterr.NewAPIError(goresterr.ServerError, fmt.Sprintf("generate links failed:%s", err.Error()))
+		return goresterr.NewAPIError(goresterr.ServerError,
+			goresterr.ErrorMessage{MessageEN: fmt.Sprintf("generate links failed:%s", err.Error())})
 	}
 	return WriteResponse(ctx.Response, http.StatusCreated, r)
 }
@@ -54,11 +55,11 @@ func handleCreate(ctx *resource.Context) *goresterr.APIError {
 func handleDelete(ctx *resource.Context) *goresterr.APIError {
 	handler := ctx.Resource.GetSchema().GetHandler().GetDeleteHandler()
 	if handler == nil {
-		return goresterr.NewAPIError(goresterr.NotFound, "no handler for delete")
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no handler for delete"})
 	}
 
 	if err := handler(ctx); err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	kind, ok := ctx.Resource.(resource.ResourceKind)
@@ -76,17 +77,18 @@ func handleUpdate(ctx *resource.Context) *goresterr.APIError {
 	schema := ctx.Resource.GetSchema()
 	handler := schema.GetHandler().GetUpdateHandler()
 	if handler == nil {
-		return goresterr.NewAPIError(goresterr.NotFound, "no handler for update")
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no handler for update"})
 	}
 
 	r, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	httpSchemeAndHost := path.Join(ctx.Request.URL.Scheme, ctx.Request.URL.Host)
 	if err := schema.AddLinksToResource(r, httpSchemeAndHost); err != nil {
-		return goresterr.NewAPIError(goresterr.ServerError, fmt.Sprintf("generate links failed:%s", err.Error()))
+		return goresterr.NewAPIError(goresterr.ServerError,
+			goresterr.ErrorMessage{MessageEN: fmt.Sprintf("generate links failed:%s", err.Error())})
 	}
 	r.SetType(ctx.Resource.GetType())
 	return WriteResponse(ctx.Response, http.StatusOK, r)
@@ -98,43 +100,46 @@ func handleList(ctx *resource.Context) *goresterr.APIError {
 	if ctx.Resource.GetID() == "" {
 		handler := schema.GetHandler().GetListHandler()
 		if handler == nil {
-			return goresterr.NewAPIError(goresterr.NotFound, "no found for list")
+			return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no found for list"})
 		}
 
 		data, err_ := handler(ctx)
 		if err_ != nil {
-			return err_
+			return err_.Localization(ctx.IsAcceptLanguageZH())
 		}
 		rc, err := resource.NewResourceCollection(ctx, data)
 		if err != nil {
-			return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+			return goresterr.NewAPIError(goresterr.ServerError, goresterr.ErrorMessage{MessageEN: err.Error()})
 		}
 
 		httpSchemeAndHost := path.Join(ctx.Request.URL.Scheme, ctx.Request.URL.Host)
 		if err := schema.AddLinksToResourceCollection(rc, httpSchemeAndHost); err != nil {
-			return goresterr.NewAPIError(goresterr.ServerError, fmt.Sprintf("generate links failed:%s", err.Error()))
+			return goresterr.NewAPIError(goresterr.ServerError,
+				goresterr.ErrorMessage{MessageEN: fmt.Sprintf("generate links failed:%s", err.Error())})
 		}
 		result = rc
 	} else {
 		handler := schema.GetHandler().GetGetHandler()
 		if handler == nil {
-			return goresterr.NewAPIError(goresterr.NotFound, "no found for list")
+			return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no found for list"})
 		}
 		r, err := handler(ctx)
 		if err != nil {
-			return err
+			return err.Localization(ctx.IsAcceptLanguageZH())
 		}
 
 		if r == nil || (reflect.ValueOf(r).Kind() == reflect.Ptr && reflect.ValueOf(r).IsNil()) {
 			return goresterr.NewAPIError(goresterr.NotFound,
-				fmt.Sprintf("%s resource with id %s doesn't exist", ctx.Resource.GetType(), ctx.Resource.GetID()))
+				goresterr.ErrorMessage{MessageEN: fmt.Sprintf("%s resource with id %s doesn't exist",
+					ctx.Resource.GetType(), ctx.Resource.GetID())})
 		} else {
 			//the resource handler returns mayn't include schema
 			r.SetSchema(ctx.Resource.GetSchema())
 			r.SetParent(ctx.Resource.GetParent())
 			httpSchemeAndHost := path.Join(ctx.Request.URL.Scheme, ctx.Request.URL.Host)
 			if err := schema.AddLinksToResource(r, httpSchemeAndHost); err != nil {
-				return goresterr.NewAPIError(goresterr.ServerError, fmt.Sprintf("generate links failed:%s", err.Error()))
+				return goresterr.NewAPIError(goresterr.ServerError,
+					goresterr.ErrorMessage{MessageEN: fmt.Sprintf("generate links failed:%s", err.Error())})
 			}
 			r.SetType(ctx.Resource.GetType())
 		}
@@ -147,12 +152,12 @@ func handleList(ctx *resource.Context) *goresterr.APIError {
 func handleAction(ctx *resource.Context) *goresterr.APIError {
 	handler := ctx.Resource.GetSchema().GetHandler().GetActionHandler()
 	if handler == nil {
-		return goresterr.NewAPIError(goresterr.NotFound, "no handler for action")
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: "no handler for action"})
 	}
 
 	result, err := handler(ctx)
 	if err != nil {
-		return err
+		return err.Localization(ctx.IsAcceptLanguageZH())
 	}
 
 	return WriteResponse(ctx.Response, http.StatusOK, result)
@@ -169,7 +174,8 @@ func WriteResponse(resp http.ResponseWriter, status int, result interface{}) *go
 
 	body, err := json.Marshal(result)
 	if err != nil {
-		return goresterr.NewAPIError(goresterr.ServerError, fmt.Sprintf("marshal failed:%s", err.Error()))
+		return goresterr.NewAPIError(goresterr.ServerError,
+			goresterr.ErrorMessage{MessageEN: fmt.Sprintf("marshal failed:%s", err.Error())})
 	}
 	resp.Write(body)
 	return nil

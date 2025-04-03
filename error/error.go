@@ -28,25 +28,56 @@ var (
 	ClusterUnavailable = ErrorCode{"ClusterUnavailable", 503}
 )
 
+const (
+	ErrorCHNameInvalidQuery  = "查询参数[%s]不合法"
+	ErrorCHNameInvalidFormat = "请求格式不合法 "
+)
+
 type ErrorCode struct {
 	Code   string `json:"code,omitempty"`
 	Status int    `json:"status,omitempty"`
+}
+
+type ErrorMessage struct {
+	MessageEN string `json:"messageEN"`
+	MessageCN string `json:"messageCN"`
 }
 
 type APIError struct {
 	ErrorCode `json:",inline"`
 	Type      string `json:"type,omitempty"`
 	Message   string `json:"message,omitempty"`
+	MessageCN string `json:"-"`
 }
 
-func NewAPIError(code ErrorCode, message string) *APIError {
+func NewAPIError(code ErrorCode, message ErrorMessage) *APIError {
 	return &APIError{
 		ErrorCode: code,
 		Type:      "error",
-		Message:   message,
+		Message:   message.MessageEN,
+		MessageCN: message.MessageCN,
 	}
 }
 
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+func (e *APIError) Localization(localize bool) *APIError {
+	if localize {
+		e.Message = e.MessageCN
+	}
+	return e
+}
+
+func NewErrorMessage(msgEn, msgCn string) *ErrorMessage {
+	return &ErrorMessage{MessageEN: msgEn, MessageCN: msgCn}
+}
+
+func (m *ErrorMessage) Error() string {
+	return m.MessageEN
+}
+
+func (m *ErrorMessage) ErrorCN() string {
+	return m.MessageCN
 }

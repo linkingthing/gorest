@@ -45,8 +45,8 @@ type Resource interface {
 	SetAction(*Action)
 }
 
-//struct implement ResourceKind
-//struct pointer should implement Resource
+// struct implement ResourceKind
+// struct pointer should implement Resource
 type ResourceKind interface {
 	GetParents() []ResourceKind
 	//return the default resource if the related field
@@ -60,8 +60,8 @@ type ResourceKind interface {
 	SupportAsyncDelete() bool
 }
 
-//lowercase singluar
-//eg: type Node struct -> node
+// lowercase singluar
+// eg: type Node struct -> node
 func DefaultKindName(t interface{}) string {
 	typ := reflect.TypeOf(t)
 	kind := typ.Kind()
@@ -76,8 +76,8 @@ func DefaultKindName(t interface{}) string {
 	return strings.ToLower(typ.Name())
 }
 
-//resource name is lowercase, plural word
-//eg: type Node struct -> nodes
+// resource name is lowercase, plural word
+// eg: type Node struct -> nodes
 func DefaultResourceName(t interface{}) string {
 	return util.GuessPluralName(DefaultKindName(t))
 }
