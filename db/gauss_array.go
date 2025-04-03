@@ -67,7 +67,7 @@ func PQArray(a interface{}) interface {
 		return (*IPNetArray)(a)
 	}
 
-	return pq.GenericArray{a}
+	return pq.GenericArray{A: a}
 }
 
 type IntArray []int

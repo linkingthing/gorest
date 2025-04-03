@@ -152,7 +152,7 @@ func TestBatchInsert(t *testing.T) {
 		return
 	}
 	c, err := pool.CopyFrom(context.Background(),
-		pgx.Identifier{DefaultSchemaName, getTableNameWithoutSchema(descriptor.Typ)},
+		pgx.Identifier{DefaultSchemaName, getTableNameWithoutSchema(DefaultSchemaName, descriptor.Typ)},
 		[]string{"id", "create_time", "name", "age", "address"}, pgx.CopyFromRows(copyValues))
 	if err != nil {
 		t.Error(err)

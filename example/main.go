@@ -202,7 +202,7 @@ func (h *clusterHandler) Create(ctx *resource.Context) (resource.Resource, *gore
 	cluster.SetID(cluster.Name)
 	cluster.SetCreationTimestamp(time.Now())
 	if err := h.clusters.AddCluster(cluster); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, goresterr.ErrorMessage{MessageEN: err.Error()})
 	} else {
 		return cluster, nil
 	}
@@ -224,7 +224,7 @@ func (h *clusterHandler) Action(ctx *resource.Context) (interface{}, *goresterr.
 		return base64.StdEncoding.EncodeToString([]byte(input.Data)), nil
 	case "decode":
 		if data, e := base64.StdEncoding.DecodeString(input.Data); e != nil {
-			return nil, goresterr.NewAPIError(goresterr.InvalidFormat, e.Error())
+			return nil, goresterr.NewAPIError(goresterr.InvalidFormat, goresterr.ErrorMessage{MessageEN: e.Error()})
 		} else {
 			return string(data), nil
 		}
@@ -246,12 +246,12 @@ func newNodeHandler(s *State) *nodeHandler {
 func (h *nodeHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	node := ctx.Resource.(*Node)
 	if ip := net.ParseIP(node.Address); ip == nil {
-		return nil, goresterr.NewAPIError(goresterr.InvalidFormat, "address isn't valid ipv4 address")
+		return nil, goresterr.NewAPIError(goresterr.InvalidFormat, goresterr.ErrorMessage{MessageEN: "address isn't valid ipv4 address"})
 	}
 
 	node.SetID(node.Address)
 	if err := h.clusters.AddNode(node.GetParent().GetID(), node); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return nil, goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: err.Error()})
 	}
 	return node, nil
 }
@@ -259,7 +259,7 @@ func (h *nodeHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 func (h *nodeHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	node := ctx.Resource.(*Node)
 	if err := h.clusters.DeleteNode(node.GetParent().GetID(), node.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(goresterr.NotFound, goresterr.ErrorMessage{MessageEN: err.Error()})
 	} else {
 		return nil
 	}
