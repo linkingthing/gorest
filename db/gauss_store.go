@@ -15,7 +15,7 @@ import (
 
 	_ "gitee.com/opengauss/openGauss-connector-go-pq"
 	pq "gitee.com/opengauss/openGauss-connector-go-pq"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/Kseleven/pgx/v5/pgtype"
 	"github.com/linkingthing/cement/reflector"
 	"github.com/linkingthing/cement/stringtool"
 	"github.com/linkingthing/cement/uuid"

@@ -12,6 +12,7 @@ import (
 	ut "github.com/linkingthing/cement/unittest"
 	"github.com/linkingthing/gorest/resource"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const ConnStr string = "user=test password=test host=127.0.0.1 port=5432 database=test sslmode=disable pool_max_conns=10"
@@ -110,9 +111,9 @@ type User struct {
 
 func TestPGConnect(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&User{}})
-	ut.Assert(t, err == nil, "")
+	require.NoError(t, err)
 	store, err := NewPGStore(ConnStr, meta)
-	ut.Assert(t, err == nil, "")
+	require.NoError(t, err)
 	t.Log(store)
 }
 
@@ -645,6 +646,10 @@ func TestPGCopyFrom(t *testing.T) {
 	}
 
 	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		if _, err := tx.Delete(ResourceDBType(&IndexResource{}), nil); err != nil {
+			return err
+		}
+
 		_, err := tx.CopyFrom(ResourceDBType(&IndexResource{}), copyValues)
 		return err
 	}))

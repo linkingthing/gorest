@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/Kseleven/pgx/v5"
+	"github.com/Kseleven/pgx/v5/pgxpool"
 	"github.com/linkingthing/cement/reflector"
 	"github.com/linkingthing/cement/stringtool"
 	"github.com/linkingthing/gorest/resource"
