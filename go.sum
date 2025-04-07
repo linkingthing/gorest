@@ -1,5 +1,5 @@
-github.com/Kseleven/pgx/v5 v5.0.0-20250407094835-59f7824de31e h1:jM6Yixv1TGM743W3skfP6gu+Hc74atqJ6KTSTHwC8Xw=
-github.com/Kseleven/pgx/v5 v5.0.0-20250407094835-59f7824de31e/go.mod h1:7aoJo56TDG+zdp3N9yfP0BuqtzBroE5TTFmzOZ462B4=
+github.com/Kseleven/pgx/v5 v5.7.4 h1:ghbaapJn7Nu4yV6c4hLa3z7uCoNNf7ULfXqcnOQZXvY=
+github.com/Kseleven/pgx/v5 v5.7.4/go.mod h1:7aoJo56TDG+zdp3N9yfP0BuqtzBroE5TTFmzOZ462B4=
 github.com/bytedance/sonic v1.11.6 h1:oUp34TzMlL+OY1OUWxHqsdkgC/Zfc85zGqw9siXjrc0=
 github.com/bytedance/sonic v1.11.6/go.mod h1:LysEHSvpvDySVdC2f87zGWf6CIKJcAvqab1ZaiQtds4=
 github.com/bytedance/sonic/loader v0.1.1 h1:c+e5Pt1k/cy5wMveRDyk2X4B9hF4g7an8N3zCYjJFNM=

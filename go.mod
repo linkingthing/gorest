@@ -3,7 +3,7 @@ module github.com/linkingthing/gorest
 go 1.22
 
 require (
-	github.com/Kseleven/pgx/v5 v5.0.0-20250407094835-59f7824de31e
+	github.com/Kseleven/pgx/v5 v5.7.4
 	github.com/gin-gonic/gin v1.10.0
 	github.com/linkingthing/cement v1.0.0
 	github.com/stretchr/testify v1.10.0
