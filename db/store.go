@@ -56,11 +56,7 @@ const (
 )
 
 func NewRStore(connStr string, meta *ResourceMeta, driver Driver, opts ...Option) (ResourceStore, error) {
-	if driver == DriverOpenGauss {
-		return NewGaussStore(connStr, meta, opts...)
-	}
-
-	return NewPGStore(connStr, meta, opts...)
+	return NewPGStore(connStr, driver, meta, opts...)
 }
 
 func WithTx(store ResourceStore, f func(Transaction) error) error {

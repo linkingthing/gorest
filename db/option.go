@@ -1,5 +1,7 @@
 package db
 
+import "fmt"
+
 type Option func(ResourceStore)
 
 func WithSchema(schema string) Option {
@@ -19,5 +21,17 @@ func WithDropPublicSchema(dropSchemas ...string) Option {
 		if err := r.DropSchemas(dropSchemas...); err != nil {
 			panic(err)
 		}
+	}
+}
+
+var showLog bool
+
+func SetDebug(t bool) {
+	showLog = t
+}
+
+func logSql(query string, args ...any) {
+	if showLog {
+		fmt.Printf("*** exec sql: %s args:%s\n", query, args)
 	}
 }

@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -19,14 +20,15 @@ type PGStore struct {
 	schema string
 	pool   *pgxpool.Pool
 	meta   *ResourceMeta
+	driver Driver
 }
 
-func NewPGStore(connStr string, meta *ResourceMeta, opts ...Option) (ResourceStore, error) {
+func NewPGStore(connStr string, driver Driver, meta *ResourceMeta, opts ...Option) (ResourceStore, error) {
 	pool, err := pgxpool.New(context.TODO(), connStr)
 	if err != nil {
 		return nil, err
 	}
-	r := &PGStore{meta: meta, pool: pool, schema: DefaultSchemaName}
+	r := &PGStore{meta: meta, pool: pool, driver: driver, schema: DefaultSchemaName}
 
 	if isRecovery, err := IsDBRecoveryMode(pool); err != nil {
 		pool.Close()
@@ -185,7 +187,9 @@ func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []
 			idxBuf.WriteString(IndexPrefix + tableName + "_" + index)
 			idxBuf.WriteString(" on ")
 			idxBuf.WriteString(getTableName(store.schema, descriptor.Typ))
-			idxBuf.WriteString(" using gin")
+			if store.driver != DriverOpenGauss { //GaussDB not support gin index
+				idxBuf.WriteString(" using gin")
+			}
 			idxBuf.WriteString(" (")
 			idxBuf.WriteString(index)
 			idxBuf.WriteString(")")
@@ -228,6 +232,20 @@ func (store *PGStore) GetSchema() string {
 }
 
 func (store *PGStore) InitSchema() error {
+	if store.driver == DriverOpenGauss {
+		row := store.pool.QueryRow(context.Background(),
+			"SELECT schema_name FROM information_schema.schemata where schema_name=$1;", store.GetSchema())
+		var SchemaName string
+		if err := row.Scan(&SchemaName); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				_, err := store.pool.Exec(context.Background(), fmt.Sprintf("create schema %s", store.GetSchema()))
+				return err
+			}
+			return err
+		}
+		return nil
+	}
+
 	_, err := store.pool.Exec(context.TODO(), "create schema if not exists "+store.GetSchema())
 	return err
 }

@@ -46,7 +46,7 @@ func TestNewResourceMeta(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
 
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	tx, _ := store.Begin()
@@ -88,7 +88,9 @@ func TestBatchInsert(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
 
-	pool, err := pgxpool.New(context.Background(), ConnStr)
+	connStr, err := readEnv()
+	ut.Assert(t, err == nil, "")
+	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		t.Error(err)
 		return

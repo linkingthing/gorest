@@ -5,6 +5,7 @@ import (
 	"math"
 	"net"
 	"net/netip"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -14,8 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-const ConnStr string = "user=test password=test host=127.0.0.1 port=5432 database=test sslmode=disable pool_max_conns=10"
 
 type Child struct {
 	resource.ResourceBase
@@ -109,10 +108,27 @@ type User struct {
 	Numbers               []int
 }
 
+func setup(meta *ResourceMeta) (ResourceStore, error) {
+	connStr, err := readEnv()
+	if err != nil {
+		return nil, err
+	}
+	store, err := NewPGStore(connStr, DriverOpenGauss, meta)
+	return store, err
+}
+
+func readEnv() (string, error) {
+	f, err := os.ReadFile(".env")
+	if err != nil {
+		return "", err
+	}
+	return string(f), nil
+}
+
 func TestPGConnect(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&User{}})
 	require.NoError(t, err)
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	require.NoError(t, err)
 	t.Log(store)
 }
@@ -120,7 +136,7 @@ func TestPGConnect(t *testing.T) {
 func TestPGCURD(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "err str is %v", err)
 
 	initChild(store)
@@ -187,7 +203,7 @@ func TestPGCURD(t *testing.T) {
 func TestPGCURDEx(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Child{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -221,7 +237,7 @@ func TestPGCURDEx(t *testing.T) {
 func TestPGMultiToMultiRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}, &Child{}, &MotherChild{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	initChild(store)
@@ -269,7 +285,7 @@ type Zone struct {
 func TestPGOneToManyRelationship(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&View{}, &Zone{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -325,7 +341,7 @@ func TestPGOneToManyRelationship(t *testing.T) {
 func TestPGGetWithLimitAndOffset(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Mother{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -359,7 +375,7 @@ type Student struct {
 func TestPGIgnField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Student{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -392,7 +408,7 @@ type Rdata struct {
 func TestPGUniqueField(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&Rdata{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -452,7 +468,7 @@ type BigNum struct {
 func TestPGIntLimit(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&BigNum{}})
 	ut.Assert(t, err == nil, "")
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	ut.Assert(t, err == nil, "")
 
 	tx, _ := store.Begin()
@@ -624,7 +640,7 @@ func TestPGIndex(t *testing.T) {
 func TestPGCopyFrom(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&IndexResource{}})
 	assert.NoError(t, err)
-	store, err := NewPGStore(ConnStr, meta)
+	store, err := setup(meta)
 	assert.NoError(t, err)
 
 	var copyValues [][]any

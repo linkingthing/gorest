@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const FillValueConnStr string = "user=lx password=Linking@201907^%$# host=192.168.54.137 port=25432 database=lx sslmode=disable pool_max_conns=10"
-
 type FillValueResource struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string     `json:"name" db:"nk"`
@@ -26,7 +24,7 @@ type FillValueResource struct {
 func TestFillValue(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewPGStore(FillValueConnStr, meta)
+	store, err := setup(meta)
 	assert.NoError(t, err)
 	SetDebug(true)
 
@@ -203,7 +201,7 @@ func TestFillValue(t *testing.T) {
 func TestFillValueCount(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewPGStore(FillValueConnStr, meta)
+	store, err := setup(meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource
@@ -271,7 +269,7 @@ func TestFillValueCount(t *testing.T) {
 func TestFillValueUpdate(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewPGStore(FillValueConnStr, meta)
+	store, err := setup(meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource
@@ -336,7 +334,7 @@ func TestFillValueUpdate(t *testing.T) {
 func TestFillValueDelete(t *testing.T) {
 	meta, err := NewResourceMeta([]resource.Resource{&FillValueResource{}})
 	assert.NoError(t, err)
-	store, err := NewPGStore(FillValueConnStr, meta)
+	store, err := setup(meta)
 	assert.NoError(t, err)
 
 	var preData []*FillValueResource
