@@ -24,9 +24,10 @@ import (
 )
 
 type GaussStore struct {
-	conn   *sql.DB
-	schema string
-	meta   *ResourceMeta
+	conn     *sql.DB
+	schema   string
+	meta     *ResourceMeta
+	readOnly bool
 }
 
 var showLog bool
@@ -52,6 +53,7 @@ func NewGaussStore(connStr string, meta *ResourceMeta, opts ...Option) (Resource
 		g.Close()
 		return nil, err
 	} else if isRecovery {
+		g.readOnly = true
 		return g, nil
 	}
 
@@ -297,7 +299,7 @@ func (g *GaussStore) Close() {
 }
 
 func (g *GaussStore) Begin() (Transaction, error) {
-	tx, err := g.conn.Begin()
+	tx, err := g.conn.BeginTx(context.Background(), &sql.TxOptions{ReadOnly: g.readOnly})
 	if err != nil {
 		return nil, err
 	}

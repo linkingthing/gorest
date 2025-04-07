@@ -61,6 +61,11 @@ func TestConnect(t *testing.T) {
 	store, err := setup(GaussConnStr, meta)
 	assert.NoError(t, err)
 	t.Log(store)
+
+	assert.NoError(t, WithTx(store, func(tx Transaction) error {
+		_, err := tx.Exec("SELECT version()")
+		return err
+	}))
 }
 
 func setup(conStr string, meta *ResourceMeta) (ResourceStore, error) {
