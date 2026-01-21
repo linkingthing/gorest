@@ -17,10 +17,11 @@ import (
 )
 
 type PGStore struct {
-	schema string
-	pool   *pgxpool.Pool
-	meta   *ResourceMeta
-	driver Driver
+	schema     string
+	pool       *pgxpool.Pool
+	meta       *ResourceMeta
+	driver     Driver
+	isReadOnly bool
 }
 
 func NewPGStore(connStr string, driver Driver, meta *ResourceMeta, opts ...Option) (ResourceStore, error) {
@@ -34,6 +35,7 @@ func NewPGStore(connStr string, driver Driver, meta *ResourceMeta, opts ...Optio
 		pool.Close()
 		return nil, err
 	} else if isRecovery {
+		r.isReadOnly = true
 		return r, nil
 	}
 
@@ -62,6 +64,10 @@ func NewPGStore(connStr string, driver Driver, meta *ResourceMeta, opts ...Optio
 	}
 
 	return r, nil
+}
+
+func (store *PGStore) IsReadOnly() bool {
+	return store.isReadOnly
 }
 
 func (store *PGStore) createTableSql(descriptor *ResourceDescriptor) (string, []string) {

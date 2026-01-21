@@ -14,6 +14,7 @@ type ResourceStore interface {
 	SetSchema(string)
 	GetSchema() string
 	DropSchemas(dropSchemas ...string) error
+	IsReadOnly() bool
 }
 
 type Transaction interface {
