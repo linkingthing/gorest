@@ -224,9 +224,11 @@ func (store *PGStore) Begin() (Transaction, error) {
 	tx, err := store.pool.Begin(context.TODO())
 	if err != nil {
 		return nil, err
-	} else {
-		return PGStoreTx{tx, NewBaseTx(store.meta, store.schema)}, nil
 	}
+
+	baseTx := NewBaseTx(store.meta, store.schema)
+	baseTx.setReadonly(store.isReadOnly)
+	return PGStoreTx{tx, baseTx}, nil
 }
 
 func (store *PGStore) SetSchema(s string) {
@@ -289,12 +291,11 @@ func (tx PGStoreTx) Insert(r resource.Resource) (resource.Resource, error) {
 	_, err = tx.Tx.Exec(context.TODO(), sql, args...)
 	if err != nil {
 		return nil, err
-	} else {
-		return r, err
 	}
+	return r, nil
 }
 
-func (tx PGStoreTx) GetOwned(owner ResourceType, ownerID string, owned ResourceType) (interface{}, error) {
+func (tx PGStoreTx) GetOwned(owner ResourceType, ownerID string, owned ResourceType) (any, error) {
 	goTyp, err := tx.meta.GetGoType(owned)
 	if err != nil {
 		return nil, err
@@ -308,12 +309,11 @@ func (tx PGStoreTx) GetOwned(owner ResourceType, ownerID string, owned ResourceT
 	err = tx.getWithSql(sql, args, sp)
 	if err != nil {
 		return nil, err
-	} else {
-		return reflect.ValueOf(sp).Elem().Interface(), nil
 	}
+	return reflect.ValueOf(sp).Elem().Interface(), nil
 }
 
-func (tx PGStoreTx) FillOwned(owner ResourceType, ownerID string, out interface{}) error {
+func (tx PGStoreTx) FillOwned(owner ResourceType, ownerID string, out any) error {
 	r, err := reflector.GetStructPointerInSlice(out)
 	if err != nil {
 		return err
@@ -327,7 +327,7 @@ func (tx PGStoreTx) FillOwned(owner ResourceType, ownerID string, out interface{
 	return tx.getWithSql(sql, args, out)
 }
 
-func (tx PGStoreTx) Get(typ ResourceType, cond map[string]interface{}) (interface{}, error) {
+func (tx PGStoreTx) Get(typ ResourceType, cond map[string]any) (any, error) {
 	goTyp, err := tx.meta.GetGoType(typ)
 	if err != nil {
 		return nil, err
@@ -336,12 +336,31 @@ func (tx PGStoreTx) Get(typ ResourceType, cond map[string]interface{}) (interfac
 	err = tx.Fill(cond, sp)
 	if err != nil {
 		return nil, err
-	} else {
-		return reflect.ValueOf(sp).Elem().Interface(), nil
 	}
+	return reflect.ValueOf(sp).Elem().Interface(), nil
 }
 
-func (tx PGStoreTx) Fill(conds map[string]interface{}, out interface{}) error {
+var RecordNotFoundErr = fmt.Errorf("record not found")
+
+func (tx PGStoreTx) GetOne(typ ResourceType, cond map[string]any) (any, error) {
+	goTyp, err := tx.meta.GetGoType(typ)
+	if err != nil {
+		return nil, err
+	}
+
+	sp := reflector.NewSlicePointer(reflect.PointerTo(goTyp))
+	if err = tx.Fill(cond, sp); err != nil {
+		return nil, err
+	}
+
+	sliceVal := reflect.ValueOf(sp).Elem()
+	if sliceVal.Len() == 0 {
+		return nil, RecordNotFoundErr
+	}
+	return sliceVal.Index(0).Interface(), nil
+}
+
+func (tx PGStoreTx) Fill(conds map[string]any, out any) error {
 	r, err := reflector.GetStructPointerInSlice(out)
 	if err != nil {
 		return err
@@ -355,7 +374,7 @@ func (tx PGStoreTx) Fill(conds map[string]interface{}, out interface{}) error {
 	return tx.getWithSql(sql, args, out)
 }
 
-func (tx PGStoreTx) Exists(typ ResourceType, conds map[string]interface{}) (bool, error) {
+func (tx PGStoreTx) Exists(typ ResourceType, conds map[string]any) (bool, error) {
 	sql, params, err := tx.existsSqlAndArgs(typ, conds)
 	if err != nil {
 		return false, err
@@ -364,7 +383,7 @@ func (tx PGStoreTx) Exists(typ ResourceType, conds map[string]interface{}) (bool
 	return tx.existsWithSql(sql, params...)
 }
 
-func (tx PGStoreTx) existsWithSql(sql string, params ...interface{}) (bool, error) {
+func (tx PGStoreTx) existsWithSql(sql string, params ...any) (bool, error) {
 	rows, err := tx.Tx.Query(context.TODO(), sql, params...)
 	if err != nil {
 		return false, err
@@ -380,7 +399,7 @@ func (tx PGStoreTx) existsWithSql(sql string, params ...interface{}) (bool, erro
 	return exist, nil
 }
 
-func (tx PGStoreTx) Count(typ ResourceType, conds map[string]interface{}) (int64, error) {
+func (tx PGStoreTx) Count(typ ResourceType, conds map[string]any) (int64, error) {
 	sql, params, err := tx.countSqlAndArgs(typ, conds)
 	if err != nil {
 		return 0, err
@@ -389,14 +408,14 @@ func (tx PGStoreTx) Count(typ ResourceType, conds map[string]interface{}) (int64
 	return tx.countWithSql(sql, params...)
 }
 
-func (tx PGStoreTx) CountEx(typ ResourceType, sql string, params ...interface{}) (int64, error) {
+func (tx PGStoreTx) CountEx(typ ResourceType, sql string, params ...any) (int64, error) {
 	if tx.meta.Has(typ) == false {
 		return 0, fmt.Errorf("unknown resource type %v", typ)
 	}
 	return tx.countWithSql(sql, params...)
 }
 
-func (tx PGStoreTx) countWithSql(sql string, params ...interface{}) (int64, error) {
+func (tx PGStoreTx) countWithSql(sql string, params ...any) (int64, error) {
 	rows, err := tx.Tx.Query(context.TODO(), sql, params...)
 	if err != nil {
 		return 0, err
@@ -413,7 +432,7 @@ func (tx PGStoreTx) countWithSql(sql string, params ...interface{}) (int64, erro
 	return count, nil
 }
 
-func (tx PGStoreTx) Update(typ ResourceType, nv map[string]interface{}, conds map[string]interface{}) (int64, error) {
+func (tx PGStoreTx) Update(typ ResourceType, nv map[string]any, conds map[string]any) (int64, error) {
 	sql, args, err := tx.updateSqlAndArgs(typ, nv, conds)
 	if err != nil {
 		return 0, err
@@ -422,7 +441,7 @@ func (tx PGStoreTx) Update(typ ResourceType, nv map[string]interface{}, conds ma
 	return tx.Exec(sql, args...)
 }
 
-func (tx PGStoreTx) Delete(typ ResourceType, cond map[string]interface{}) (int64, error) {
+func (tx PGStoreTx) Delete(typ ResourceType, cond map[string]any) (int64, error) {
 	sql, args, err := tx.deleteSqlAndArgs(typ, cond)
 	if err != nil {
 		return 0, err
@@ -431,7 +450,7 @@ func (tx PGStoreTx) Delete(typ ResourceType, cond map[string]interface{}) (int64
 	return tx.Exec(sql, args...)
 }
 
-func (tx PGStoreTx) GetEx(typ ResourceType, sql string, params ...interface{}) (interface{}, error) {
+func (tx PGStoreTx) GetEx(typ ResourceType, sql string, params ...any) (any, error) {
 	rt, err := tx.meta.GetGoType(typ)
 	if err != nil {
 		return nil, err
@@ -440,26 +459,24 @@ func (tx PGStoreTx) GetEx(typ ResourceType, sql string, params ...interface{}) (
 	err = tx.FillEx(sp, sql, params...)
 	if err != nil {
 		return nil, err
-	} else {
-		return reflect.ValueOf(sp).Elem().Interface(), nil
 	}
+	return reflect.ValueOf(sp).Elem().Interface(), nil
 }
 
-func (tx PGStoreTx) FillEx(out interface{}, sql string, params ...interface{}) error {
+func (tx PGStoreTx) FillEx(out interface{}, sql string, params ...any) error {
 	return tx.getWithSql(sql, params, out)
 }
 
-func (tx PGStoreTx) Exec(sql string, params ...interface{}) (int64, error) {
+func (tx PGStoreTx) Exec(sql string, params ...any) (int64, error) {
 	logSql(sql, params...)
 	result, err := tx.Tx.Exec(context.TODO(), sql, params...)
 	if err != nil {
 		return 0, err
-	} else {
-		return result.RowsAffected(), nil
 	}
+	return result.RowsAffected(), nil
 }
 
-func (tx PGStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error) {
+func (tx PGStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]any) (int64, error) {
 	descriptor, err := tx.meta.GetDescriptor(typ)
 	if err != nil {
 		return 0, fmt.Errorf("get descriptor for %v failed %v", typ, err.Error())
@@ -475,7 +492,7 @@ func (tx PGStoreTx) CopyFromEx(typ ResourceType, columns []string, values [][]in
 	return c, err
 }
 
-func (tx PGStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64, error) {
+func (tx PGStoreTx) CopyFrom(typ ResourceType, values [][]any) (int64, error) {
 	descriptor, err := tx.meta.GetDescriptor(typ)
 	if err != nil {
 		return 0, fmt.Errorf("get descriptor for %v failed %v", typ, err.Error())
@@ -496,7 +513,7 @@ func (tx PGStoreTx) CopyFrom(typ ResourceType, values [][]interface{}) (int64, e
 	return c, err
 }
 
-func (tx PGStoreTx) getWithSql(sql string, args []interface{}, out interface{}) error {
+func (tx PGStoreTx) getWithSql(sql string, args []any, out any) error {
 	logSql(sql, args)
 	rows, err := tx.Tx.Query(context.TODO(), sql, args...)
 	if err != nil {
@@ -506,7 +523,7 @@ func (tx PGStoreTx) getWithSql(sql string, args []interface{}, out interface{}) 
 	return tx.rowsToResources(rows, out)
 }
 
-func (tx PGStoreTx) rowsToResources(rows pgx.Rows, out interface{}) error {
+func (tx PGStoreTx) rowsToResources(rows pgx.Rows, out any) error {
 	goTyp := reflect.TypeOf(out)
 	if goTyp.Kind() != reflect.Ptr || goTyp.Elem().Kind() != reflect.Slice {
 		return fmt.Errorf("output isn't a pointer to slice")

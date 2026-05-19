@@ -18,6 +18,7 @@ type BaseTx struct {
 	meta        *ResourceMeta
 	schema      string
 	tablePrefix string
+	readOnly    bool
 }
 
 const (
@@ -52,6 +53,14 @@ func getTableNameWithoutSchema(schema string, typ ResourceType) string {
 		return string(typ)
 	}
 	return DefaultTablePrefix + string(typ)
+}
+
+func (b *BaseTx) setReadonly(isReadOnly bool) {
+	b.readOnly = isReadOnly
+}
+
+func (b *BaseTx) IsReadOnly() bool {
+	return b.readOnly
 }
 
 func (b *BaseTx) insertSqlArgsAndID(r resource.Resource) (string, []interface{}, error) {

@@ -1,8 +1,9 @@
 package resource
 
 import (
-	goresterr "github.com/linkingthing/gorest/error"
 	"net/http"
+
+	goresterr "github.com/linkingthing/gorest/error"
 )
 
 type SchemaManager interface {

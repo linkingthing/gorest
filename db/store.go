@@ -20,30 +20,32 @@ type ResourceStore interface {
 type Transaction interface {
 	Insert(r resource.Resource) (resource.Resource, error)
 	// Get return an slice of Resource which is a pointer to struct
-	Get(typ ResourceType, cond map[string]interface{}) (interface{}, error)
+	Get(typ ResourceType, cond map[string]any) (any, error)
 	// GetOwned this is used for many to many relationship
 	//which means there is a separate table which owner and owned resource in it
 	//return an slice of Resource which is a pointer to struct
-	GetOwned(owner ResourceType, ownerID string, owned ResourceType) (interface{}, error)
-	Exists(typ ResourceType, cond map[string]interface{}) (bool, error)
-	Count(typ ResourceType, cond map[string]interface{}) (int64, error)
+	GetOwned(owner ResourceType, ownerID string, owned ResourceType) (any, error)
+	Exists(typ ResourceType, cond map[string]any) (bool, error)
+	Count(typ ResourceType, cond map[string]any) (int64, error)
 	// Fill out should be an slice of Resource which is a pointer to struct
-	Fill(cond map[string]interface{}, out interface{}) error
-	Delete(typ ResourceType, cond map[string]interface{}) (int64, error)
-	Update(typ ResourceType, nv map[string]interface{}, cond map[string]interface{}) (int64, error)
-	// FillOwned Similar with GetOwned
-	//out should be an slice of Resource which is a pointer to struct
-	FillOwned(owner ResourceType, ownerID string, out interface{}) error
+	Fill(cond map[string]any, out any) error
+	Delete(typ ResourceType, cond map[string]any) (int64, error)
+	Update(typ ResourceType, nv map[string]any, cond map[string]any) (int64, error)
+	// FillOwned Similar with GetOwned, out should be an slice of Resource which is a pointer to struct
+	FillOwned(owner ResourceType, ownerID string, out any) error
 
-	GetEx(typ ResourceType, sql string, params ...interface{}) (interface{}, error)
-	CountEx(typ ResourceType, sql string, params ...interface{}) (int64, error)
-	FillEx(out interface{}, sql string, params ...interface{}) error
+	GetEx(typ ResourceType, sql string, params ...any) (any, error)
+	//GetOne get first raw, if result raws not equal 1, return error with not found
+	GetOne(typ ResourceType, cond map[string]any) (any, error)
+	CountEx(typ ResourceType, sql string, params ...any) (int64, error)
+	FillEx(out interface{}, sql string, params ...any) error
 	Exec(sql string, params ...interface{}) (int64, error)
 	// CopyFromEx The values should be in the same order as the columns
-	CopyFromEx(typ ResourceType, columns []string, values [][]interface{}) (int64, error)
+	CopyFromEx(typ ResourceType, columns []string, values [][]any) (int64, error)
 	// CopyFrom The values should be in the same order as the columns
-	CopyFrom(typ ResourceType, values [][]interface{}) (int64, error)
+	CopyFrom(typ ResourceType, values [][]any) (int64, error)
 
+	IsReadOnly() bool
 	Commit() error
 	Rollback() error
 }
