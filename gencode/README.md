@@ -17,6 +17,6 @@ gencode user -f . -only service
 this will gen files:
 api/user_api.go
 service/user_service.go
-resource/user_resource.go
+resource/user_schema.go
 ```
 

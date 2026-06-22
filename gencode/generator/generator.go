@@ -29,7 +29,7 @@ type layer struct {
 }
 
 var allLayers = []layer{
-	{Name: "resource", DirName: "resource", Tpl: resourceTpl},
+	{Name: "schema", DirName: "resource", Tpl: resourceTpl},
 	{Name: "service", DirName: "service", Tpl: serviceTpl},
 	{Name: "api", DirName: "api", Tpl: apiTpl},
 }
