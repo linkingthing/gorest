@@ -18,7 +18,7 @@ func TestFilter(t *testing.T) {
 
 	for _, data := range datas {
 		t.Run(data.RawQuery, func(t *testing.T) {
-			f, p, err := genFiltersAndPagination(data)
+			f, p, err := GenFiltersAndPagination(data)
 			if err != nil {
 				t.Error(err)
 			}

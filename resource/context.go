@@ -48,7 +48,7 @@ type Filter struct {
 type Modifier string
 
 func NewContext(resp http.ResponseWriter, req *http.Request, schemas SchemaManager) (*Context, *error.APIError) {
-	filters, pagination, err := genFiltersAndPagination(req.URL)
+	filters, pagination, err := GenFiltersAndPagination(req.URL)
 	if err != nil {
 		return nil, err.Localization(IsRequestAcceptLanguageZH(req))
 	}
@@ -99,7 +99,7 @@ func IsRequestAcceptLanguageZH(request *http.Request) bool {
 	return strings.HasPrefix(request.Header.Get("accept-language"), "zh")
 }
 
-func genFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
+func GenFiltersAndPagination(requestUrl *url.URL) ([]Filter, *Pagination, *error.APIError) {
 	valueMap, err_ := url.ParseQuery(requestUrl.RawQuery)
 	if err_ != nil {
 		return nil, nil, error.NewAPIError(error.InvalidFormat, error.ErrorMessage{MessageEN: err_.Error(),

@@ -67,7 +67,7 @@ func TestGenFiltersAndPagination(t *testing.T) {
 			continue
 		}
 
-		filters, pagination, restErr := genFiltersAndPagination(reqUrl)
+		filters, pagination, restErr := GenFiltersAndPagination(reqUrl)
 		if restErr != nil {
 			t.Error(restErr)
 			continue
